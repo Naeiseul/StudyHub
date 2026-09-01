@@ -292,15 +292,21 @@ export default function Home() {
   const currentSelected = selectedOptions[activeQuestion] || [];
 
   return (
-    <div className="flex min-h-screen bg-gray-50 font-[family-name:var(--font-geist-sans)]">
-      {/* Left Sidebar */}
-      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col shadow-sm">
-        <div className="p-6 border-b border-gray-100">
+    <div className="flex flex-col md:flex-row min-h-screen bg-gray-50 font-[family-name:var(--font-geist-sans)]">
+      {/* Sidebar / Topbar on mobile */}
+      <aside className="w-full md:w-64 md:h-screen sticky top-0 z-10 bg-white border-b md:border-b-0 md:border-r border-gray-200 flex flex-col shadow-sm flex-shrink-0">
+        <div className="p-4 md:p-6 border-b border-gray-100 flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-800">Quiz Navigation</h2>
+          {isSubmitted && (
+            <div className="md:hidden text-right">
+              <span className="text-xs font-bold text-blue-900 uppercase tracking-wide">Score</span>
+              <p className="text-xl font-extrabold text-blue-600 leading-none">{score}/{totalMaxMarks}</p>
+            </div>
+          )}
         </div>
         
         {isSubmitted && (
-          <div className="p-4 bg-blue-50 border-b border-blue-100 text-center">
+          <div className="hidden md:block p-4 bg-blue-50 border-b border-blue-100 text-center">
             <h3 className="text-lg font-bold text-blue-900">Your Score</h3>
             <p className="text-3xl font-extrabold text-blue-600 mb-4">{score} / {totalMaxMarks}</p>
             <button 
@@ -312,44 +318,51 @@ export default function Home() {
           </div>
         )}
 
-        <nav className="flex-1 overflow-y-auto p-4 space-y-2">
+        <nav className="flex md:flex-col overflow-x-auto md:overflow-y-auto p-4 gap-2 md:gap-0 md:space-y-2 hide-scrollbar">
           {statuses.map((status, index) => (
             <button
               key={index}
               onClick={() => setActiveQuestion(index)}
-              className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors border ${getSidebarButtonColor(index, status, activeQuestion === index)}`}
+              className={`flex-shrink-0 w-auto md:w-full whitespace-nowrap text-left px-4 py-3 rounded-lg font-medium transition-colors border ${getSidebarButtonColor(index, status, activeQuestion === index)}`}
             >
               Question {index + 1}
             </button>
           ))}
         </nav>
 
-        {!isSubmitted && (
-          <div className="p-4 border-t border-gray-100">
+        <div className="p-4 border-t border-gray-100 flex-shrink-0">
+          {!isSubmitted ? (
             <button 
               onClick={handleSubmit}
               className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-sm transition-colors"
             >
               Submit Quiz
             </button>
-          </div>
-        )}
+          ) : (
+            <button 
+              onClick={handleRetake}
+              className="md:hidden w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-sm transition-colors"
+            >
+              Retake Quiz
+            </button>
+          )}
+        </div>
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 p-8 sm:p-12 flex flex-col">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 flex-1 flex flex-col relative">
-          <div className="mb-8">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-3xl font-bold text-gray-800">
-                Question {activeQuestion + 1} <span className="text-gray-400 text-xl font-medium">({currentQ.marks} Marks)</span>
+      <main className="flex-1 p-4 sm:p-8 md:p-12 flex flex-col md:overflow-y-auto">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-8 flex-1 flex flex-col relative">
+          <div className="mb-6 md:mb-8">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 sm:gap-0 mb-6">
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-800">
+                Question {activeQuestion + 1} <span className="text-gray-400 text-lg md:text-xl font-medium">({currentQ.marks} Marks)</span>
               </h2>
-              <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
+              <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold w-fit">
                 {currentQ.intensity} Intensity
               </span>
             </div>
             
-            <p className="text-gray-800 text-xl font-medium max-w-3xl mb-8 whitespace-pre-wrap">
+            <p className="text-gray-800 text-lg md:text-xl font-medium max-w-3xl mb-6 md:mb-8 whitespace-pre-wrap">
               {currentQ.question}
             </p>
 
@@ -369,7 +382,6 @@ export default function Home() {
                     textClasses = "text-blue-900 font-medium";
                   }
                 } else {
-                  // Review Mode styling
                   if (isCorrect) {
                     optionClasses = "border-green-500 bg-green-50";
                     iconBorderClasses = "border-green-500 bg-green-500";
@@ -386,10 +398,10 @@ export default function Home() {
                     key={idx}
                     onClick={() => toggleOption(idx)}
                     disabled={isSubmitted}
-                    className={`w-full text-left p-4 rounded-xl border-2 transition-all ${optionClasses} ${isSubmitted ? 'cursor-default' : ''}`}
+                    className={`w-full text-left p-3 md:p-4 rounded-xl border-2 transition-all ${optionClasses} ${isSubmitted ? 'cursor-default' : ''}`}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-5 h-5 flex items-center justify-center border-2 rounded ${currentQ.type === 'single' ? 'rounded-full' : 'rounded-md'} ${iconBorderClasses}`}>
+                    <div className="flex items-start md:items-center gap-3">
+                      <div className={`w-5 h-5 flex-shrink-0 mt-0.5 md:mt-0 flex items-center justify-center border-2 rounded ${currentQ.type === 'single' ? 'rounded-full' : 'rounded-md'} ${iconBorderClasses}`}>
                         {((!isSubmitted && isSelected) || (isSubmitted && isCorrect) || (isSubmitted && isSelected)) && (
                           <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             {isSubmitted && isSelected && !isCorrect ? (
@@ -400,7 +412,7 @@ export default function Home() {
                           </svg>
                         )}
                       </div>
-                      <span className={`text-lg ${textClasses}`}>
+                      <span className={`text-base md:text-lg ${textClasses}`}>
                         {option}
                       </span>
                     </div>
@@ -409,11 +421,10 @@ export default function Home() {
               })}
             </div>
 
-            {/* Explanation Box shown only after submission */}
             {isSubmitted && (
-              <div className="mt-8 p-6 bg-blue-50 border border-blue-200 rounded-xl max-w-3xl">
-                <h4 className="text-sm font-bold text-blue-800 uppercase tracking-wider mb-2">Explanation</h4>
-                <p className="text-blue-900 text-lg leading-relaxed">
+              <div className="mt-8 p-5 bg-blue-50 border border-blue-200 rounded-xl max-w-3xl">
+                <h4 className="text-xs md:text-sm font-bold text-blue-800 uppercase tracking-wider mb-2">Explanation</h4>
+                <p className="text-blue-900 text-base md:text-lg leading-relaxed">
                   {currentQ.explanation}
                 </p>
               </div>
@@ -421,24 +432,23 @@ export default function Home() {
 
           </div>
           
-          {/* Action Buttons (Hidden after submission) */}
           {!isSubmitted && (
-            <div className="mt-auto pt-8 border-t border-gray-100 flex gap-4">
+            <div className="mt-auto pt-6 md:pt-8 border-t border-gray-100 flex flex-col sm:flex-row gap-3">
               <button 
                 onClick={() => handleSetStatus("completed")}
-                className="px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors shadow-sm"
+                className="w-full sm:w-auto px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors shadow-sm"
               >
                 Completed
               </button>
               <button 
                 onClick={() => handleSetStatus("not-sure")}
-                className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors shadow-sm"
+                className="w-full sm:w-auto px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors shadow-sm"
               >
                 Not Sure
               </button>
               <button 
                 onClick={() => handleSetStatus("skipped")}
-                className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors shadow-sm ml-auto"
+                className="w-full sm:w-auto sm:ml-auto px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors shadow-sm"
               >
                 Skip
               </button>
