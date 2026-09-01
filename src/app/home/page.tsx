@@ -184,6 +184,14 @@ export default function Home() {
     setIsSubmitted(true);
   };
 
+  const handleRetake = () => {
+    setIsSubmitted(false);
+    setScore(0);
+    setSelectedOptions({});
+    setStatuses(Array(10).fill("unanswered"));
+    setActiveQuestion(0);
+  };
+
   const handleSetStatus = (status: QuestionStatus) => {
     if (isSubmitted) return; // Prevent changing status after submission
 
@@ -294,7 +302,13 @@ export default function Home() {
         {isSubmitted && (
           <div className="p-4 bg-blue-50 border-b border-blue-100 text-center">
             <h3 className="text-lg font-bold text-blue-900">Your Score</h3>
-            <p className="text-3xl font-extrabold text-blue-600">{score} / {totalMaxMarks}</p>
+            <p className="text-3xl font-extrabold text-blue-600 mb-4">{score} / {totalMaxMarks}</p>
+            <button 
+              onClick={handleRetake}
+              className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-sm transition-colors text-sm"
+            >
+              Retake Quiz
+            </button>
           </div>
         )}
 
