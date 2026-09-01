@@ -14,7 +14,9 @@ const quizData = [
       "B) Skills Development Act (SDA)",
       "C) Basic Conditions of Employment Act (BCEA)",
       "D) Labour Relations Act (LRA)"
-    ]
+    ],
+    correctAnswers: [1],
+    explanation: "The Skills Development Act (SDA) was specifically introduced to develop the skills of the South African workforce and encourage employers to use the workplace as an active learning environment."
   },
   {
     type: "single",
@@ -25,7 +27,9 @@ const quizData = [
       "B) Product modification",
       "C) Market penetration",
       "D) Market development"
-    ]
+    ],
+    correctAnswers: [3],
+    explanation: "Market development is an intensive growth strategy where a business aims to sell its existing products in new geographical markets (such as opening a branch in a new province)."
   },
   {
     type: "single",
@@ -36,7 +40,9 @@ const quizData = [
       "B) ii and iii",
       "C) i and ii",
       "D) i, ii, and iii"
-    ]
+    ],
+    correctAnswers: [2],
+    explanation: "Statements i and ii are correct. The macro environment is out of the business's control and is analysed using PESTLE. Statement iii is incorrect because suppliers and competitors belong to the market environment, not the macro environment."
   },
   {
     type: "single",
@@ -47,7 +53,9 @@ const quizData = [
       "B) Retrenchment and Liquidation",
       "C) Market penetration and Divestiture",
       "D) Liquidation and Market development"
-    ]
+    ],
+    correctAnswers: [1],
+    explanation: "Retrenchment, divestiture, and liquidation are the three main types of defensive strategies. Concentric diversification and market development are growth strategies."
   },
   {
     type: "multi",
@@ -59,7 +67,9 @@ const quizData = [
       "Ensures consumers are not misled by suppliers.",
       "Regulates the minimum wage of workers to protect them from exploitation.",
       "Protects employers from unfair strikes and labour disputes."
-    ]
+    ],
+    correctAnswers: [0, 1, 2],
+    explanation: "The first three points are key purposes of the CPA. Regulating minimum wage is the purpose of the BCEA, and protecting against unfair strikes is the purpose of the LRA."
   },
   {
     type: "single",
@@ -70,7 +80,9 @@ const quizData = [
       "B) UIF; employees do not contribute to this fund.",
       "C) OHSA; it compensates employees for financial distress.",
       "D) COIDA; it allows businesses to block non-compliant government tenders."
-    ]
+    ],
+    correctAnswers: [0],
+    explanation: "The Compensation for Occupational Injuries and Diseases Act (COIDA) protects employers from civil claims if an employee is injured at work, saving the business from lengthy and costly court proceedings."
   },
   {
     type: "multi",
@@ -82,7 +94,9 @@ const quizData = [
       "Choose the method of recruitment, such as internal or external.",
       "Draw up a table of advantages and disadvantages of a strategy.",
       "Conduct an environmental analysis using SWOT."
-    ]
+    ],
+    correctAnswers: [0, 1, 2],
+    explanation: "The first three options are valid steps in the HR recruitment procedure. Drawing up strategy tables and conducting SWOT analyses belong to the strategic management process, not HR recruitment."
   },
   {
     type: "single",
@@ -93,7 +107,9 @@ const quizData = [
       "B) Human resources function",
       "C) General management function",
       "D) Marketing function"
-    ]
+    ],
+    correctAnswers: [2],
+    explanation: "The General management function is responsible for the overall strategic direction of the business, including formulating and communicating the vision and mission."
   },
   {
     type: "single",
@@ -104,7 +120,9 @@ const quizData = [
       "B) i and ii",
       "C) ii and iii",
       "D) i, ii, and iii"
-    ]
+    ],
+    correctAnswers: [1],
+    explanation: "Employers have the right to lockout illegal strikers and form bargaining councils (i and ii). However, forcing employees to work overtime without pay is illegal and a direct violation of the BCEA."
   },
   {
     type: "multi",
@@ -116,17 +134,36 @@ const quizData = [
       "Handling complaints quickly and effectively.",
       "Implementing total quality management to reduce the cost of quality in factories.",
       "Designing attractive packaging to increase sales."
-    ]
+    ],
+    correctAnswers: [0, 1, 2],
+    explanation: "Data capturing, information management, and complaint handling are key administrative duties. Quality management in factories is a Production function, and packaging is a Marketing function."
   }
 ];
 
 export default function Home() {
   const [activeQuestion, setActiveQuestion] = useState(0);
   const [statuses, setStatuses] = useState<QuestionStatus[]>(Array(10).fill("unanswered"));
-  // We will track selected options just so the UI feels interactive, but we won't evaluate them yet.
   const [selectedOptions, setSelectedOptions] = useState<Record<number, number[]>>({});
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [score, setScore] = useState(0);
+
+  const handleSubmit = () => {
+    let calculatedScore = 0;
+    quizData.forEach((q, idx) => {
+      const selected = selectedOptions[idx] || [];
+      const correct = q.correctAnswers;
+      
+      if (selected.length === correct.length && selected.every(val => correct.includes(val))) {
+        calculatedScore++;
+      }
+    });
+    setScore(calculatedScore);
+    setIsSubmitted(true);
+  };
 
   const handleSetStatus = (status: QuestionStatus) => {
+    if (isSubmitted) return; // Prevent changing status after submission
+
     const newStatuses = [...statuses];
     newStatuses[activeQuestion] = status;
     setStatuses(newStatuses);
@@ -139,6 +176,16 @@ export default function Home() {
   const getStatusColor = (status: QuestionStatus, isActive: boolean) => {
     let baseColor = "bg-white text-gray-700 hover:bg-gray-50 border-transparent hover:border-gray-200";
     
+    if (isSubmitted) {
+      // In review mode, show green for correct and red for incorrect
+      const selected = selectedOptions[activeQuestion] || [];
+      const correct = quizData[activeQuestion].correctAnswers;
+      const isCorrect = selected.length === correct.length && selected.every(val => correct.includes(val));
+      
+      // Let's change the color of ALL sidebar buttons based on whether they got it right
+      // Wait, we need to know the index of the button to determine if it was correct.
+    }
+
     if (status === "completed") {
       baseColor = "bg-green-100 text-green-800 border-green-200 hover:bg-green-200";
     } else if (status === "not-sure") {
@@ -154,7 +201,39 @@ export default function Home() {
     return baseColor;
   };
 
+  const getSidebarButtonColor = (index: number, status: QuestionStatus, isActive: boolean) => {
+    let baseColor = "bg-white text-gray-700 hover:bg-gray-50 border-transparent hover:border-gray-200";
+    
+    if (isSubmitted) {
+      const selected = selectedOptions[index] || [];
+      const correct = quizData[index].correctAnswers;
+      const isCorrect = selected.length === correct.length && selected.every(val => correct.includes(val));
+      
+      if (isCorrect) {
+        baseColor = "bg-green-100 text-green-800 border-green-200";
+      } else {
+        baseColor = "bg-red-100 text-red-800 border-red-200";
+      }
+    } else {
+      if (status === "completed") {
+        baseColor = "bg-green-100 text-green-800 border-green-200 hover:bg-green-200";
+      } else if (status === "not-sure") {
+        baseColor = "bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-200";
+      } else if (status === "skipped") {
+        baseColor = "bg-red-100 text-red-800 border-red-200 hover:bg-red-200";
+      }
+    }
+
+    if (isActive) {
+      return `${baseColor} ring-2 ring-blue-500 ring-offset-1`;
+    }
+    
+    return baseColor;
+  };
+
   const toggleOption = (optionIndex: number) => {
+    if (isSubmitted) return; // Prevent changing answers after submission
+
     const currentSelected = selectedOptions[activeQuestion] || [];
     const isMulti = quizData[activeQuestion].type === "multi";
 
@@ -188,17 +267,36 @@ export default function Home() {
         <div className="p-6 border-b border-gray-100">
           <h2 className="text-xl font-bold text-gray-800">Quiz Navigation</h2>
         </div>
+        
+        {isSubmitted && (
+          <div className="p-4 bg-blue-50 border-b border-blue-100 text-center">
+            <h3 className="text-lg font-bold text-blue-900">Your Score</h3>
+            <p className="text-3xl font-extrabold text-blue-600">{score} / 10</p>
+          </div>
+        )}
+
         <nav className="flex-1 overflow-y-auto p-4 space-y-2">
           {statuses.map((status, index) => (
             <button
               key={index}
               onClick={() => setActiveQuestion(index)}
-              className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors border ${getStatusColor(status, activeQuestion === index)}`}
+              className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors border ${getSidebarButtonColor(index, status, activeQuestion === index)}`}
             >
               Question {index + 1}
             </button>
           ))}
         </nav>
+
+        {!isSubmitted && (
+          <div className="p-4 border-t border-gray-100">
+            <button 
+              onClick={handleSubmit}
+              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-sm transition-colors"
+            >
+              Submit Quiz
+            </button>
+          </div>
+        )}
       </aside>
 
       {/* Main Content Area */}
@@ -219,27 +317,51 @@ export default function Home() {
             <div className="space-y-3 max-w-3xl">
               {currentQ.options.map((option, idx) => {
                 const isSelected = currentSelected.includes(idx);
+                const isCorrect = currentQ.correctAnswers.includes(idx);
+                
+                let optionClasses = "border-gray-100 hover:border-gray-200 bg-white hover:bg-gray-50";
+                let iconBorderClasses = "border-gray-300";
+                let textClasses = "text-gray-700";
+
+                if (!isSubmitted) {
+                  if (isSelected) {
+                    optionClasses = "border-blue-500 bg-blue-50";
+                    iconBorderClasses = "border-blue-500 bg-blue-500";
+                    textClasses = "text-blue-900 font-medium";
+                  }
+                } else {
+                  // Review Mode styling
+                  if (isCorrect) {
+                    optionClasses = "border-green-500 bg-green-50";
+                    iconBorderClasses = "border-green-500 bg-green-500";
+                    textClasses = "text-green-900 font-medium";
+                  } else if (isSelected && !isCorrect) {
+                    optionClasses = "border-red-500 bg-red-50";
+                    iconBorderClasses = "border-red-500 bg-red-500";
+                    textClasses = "text-red-900 font-medium";
+                  }
+                }
+
                 return (
                   <button
                     key={idx}
                     onClick={() => toggleOption(idx)}
-                    className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
-                      isSelected 
-                        ? "border-blue-500 bg-blue-50" 
-                        : "border-gray-100 hover:border-gray-200 bg-white hover:bg-gray-50"
-                    }`}
+                    disabled={isSubmitted}
+                    className={`w-full text-left p-4 rounded-xl border-2 transition-all ${optionClasses} ${isSubmitted ? 'cursor-default' : ''}`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-5 h-5 flex items-center justify-center border-2 rounded ${currentQ.type === 'single' ? 'rounded-full' : 'rounded-md'} ${
-                        isSelected ? "border-blue-500 bg-blue-500" : "border-gray-300"
-                      }`}>
-                        {isSelected && (
+                      <div className={`w-5 h-5 flex items-center justify-center border-2 rounded ${currentQ.type === 'single' ? 'rounded-full' : 'rounded-md'} ${iconBorderClasses}`}>
+                        {((!isSubmitted && isSelected) || (isSubmitted && isCorrect) || (isSubmitted && isSelected)) && (
                           <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            {isSubmitted && isSelected && !isCorrect ? (
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                            ) : (
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            )}
                           </svg>
                         )}
                       </div>
-                      <span className={`text-lg ${isSelected ? "text-blue-900 font-medium" : "text-gray-700"}`}>
+                      <span className={`text-lg ${textClasses}`}>
                         {option}
                       </span>
                     </div>
@@ -247,29 +369,42 @@ export default function Home() {
                 );
               })}
             </div>
+
+            {/* Explanation Box shown only after submission */}
+            {isSubmitted && (
+              <div className="mt-8 p-6 bg-blue-50 border border-blue-200 rounded-xl max-w-3xl">
+                <h4 className="text-sm font-bold text-blue-800 uppercase tracking-wider mb-2">Explanation</h4>
+                <p className="text-blue-900 text-lg leading-relaxed">
+                  {currentQ.explanation}
+                </p>
+              </div>
+            )}
+
           </div>
           
-          {/* Action Buttons */}
-          <div className="mt-auto pt-8 border-t border-gray-100 flex gap-4">
-            <button 
-              onClick={() => handleSetStatus("completed")}
-              className="px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors shadow-sm"
-            >
-              Completed
-            </button>
-            <button 
-              onClick={() => handleSetStatus("not-sure")}
-              className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors shadow-sm"
-            >
-              Not Sure
-            </button>
-            <button 
-              onClick={() => handleSetStatus("skipped")}
-              className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors shadow-sm ml-auto"
-            >
-              Skip
-            </button>
-          </div>
+          {/* Action Buttons (Hidden after submission) */}
+          {!isSubmitted && (
+            <div className="mt-auto pt-8 border-t border-gray-100 flex gap-4">
+              <button 
+                onClick={() => handleSetStatus("completed")}
+                className="px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors shadow-sm"
+              >
+                Completed
+              </button>
+              <button 
+                onClick={() => handleSetStatus("not-sure")}
+                className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors shadow-sm"
+              >
+                Not Sure
+              </button>
+              <button 
+                onClick={() => handleSetStatus("skipped")}
+                className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors shadow-sm ml-auto"
+              >
+                Skip
+              </button>
+            </div>
+          )}
         </div>
       </main>
     </div>
