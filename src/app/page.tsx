@@ -5,10 +5,6 @@ export default function Home() {
         <h1 className="text-4xl font-bold tracking-tight sm:text-6xl text-blue-600">
           Welcome to StudyHub!
         </h1>
-        <p className="text-lg text-gray-500 max-w-2xl">
-          Your new learning platform is live and successfully connected to Vercel via GitHub.
-          Every time you push changes here, Vercel will automatically build and deploy them!
-        </p>
       </main>
     </div>
   );
