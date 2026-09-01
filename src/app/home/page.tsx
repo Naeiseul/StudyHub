@@ -8,6 +8,7 @@ const quizData = [
   {
     type: "single",
     intensity: "Low",
+    marks: 2,
     question: "Which Act encourages businesses to invest in the education and training of the South African workforce?",
     options: [
       "A) Employment Equity Act (EEA)",
@@ -21,6 +22,7 @@ const quizData = [
   {
     type: "single",
     intensity: "Low",
+    marks: 2,
     question: "Jericho Carpets opened a new branch in another province to distribute their carpets. What intensive strategy is this?",
     options: [
       "A) Product development",
@@ -34,6 +36,7 @@ const quizData = [
   {
     type: "single",
     intensity: "Medium",
+    marks: 2,
     question: "Consider the following statements about the macro environment:\ni. Amandla Distributors has no control over it.\nii. A PESTLE analysis is used to evaluate its challenges.\niii. It includes the business's suppliers and competitors.\n\nWhich of these statements are CORRECT?",
     options: [
       "A) i only",
@@ -47,6 +50,7 @@ const quizData = [
   {
     type: "single",
     intensity: "Medium",
+    marks: 6,
     question: "Identify TWO types of defensive strategies from the options below:",
     options: [
       "A) Divestiture and Concentric diversification",
@@ -60,6 +64,7 @@ const quizData = [
   {
     type: "multi",
     intensity: "High",
+    marks: 10,
     question: "In an essay question, if the topic is \"The Consumer Protection Act (CPA) and its purpose\", which of the following points would you add? (Select all that apply)",
     options: [
       "Establishes national standards to protect consumers regardless of economic status.",
@@ -74,6 +79,7 @@ const quizData = [
   {
     type: "single",
     intensity: "Medium",
+    marks: 6,
     question: "Buhle Architecture pays monthly contributions to a common fund to protect workers in the event of workplace accidents. Which Act applies here, and what is one advantage for the business?",
     options: [
       "A) COIDA; it eliminates time and costs spent on lengthy civil court proceedings.",
@@ -87,6 +93,7 @@ const quizData = [
   {
     type: "multi",
     intensity: "High",
+    marks: 12,
     question: "In an essay question, if the topic is \"The Human Resources Recruitment Procedure\", which of the following steps would you include in your discussion? (Select all that apply)",
     options: [
       "Evaluate the job and prepare a job analysis to identify recruitment needs.",
@@ -101,6 +108,7 @@ const quizData = [
   {
     type: "single",
     intensity: "Low",
+    marks: 2,
     question: "Bloem Enterprises' CEO effectively communicates the shared vision and mission of the business with employees. Which business function does this represent?",
     options: [
       "A) Public relations function",
@@ -114,6 +122,7 @@ const quizData = [
   {
     type: "single",
     intensity: "Medium",
+    marks: 6,
     question: "Consider the following rights of employers in terms of the Labour Relations Act (LRA):\ni. Lockout employees who engage in an unprotected/illegal strike.\nii. Form bargaining councils for collective bargaining purposes.\niii. Force employees to work overtime without pay.\n\nWhich of these are actual rights of the employer?",
     options: [
       "A) i only",
@@ -127,6 +136,7 @@ const quizData = [
   {
     type: "multi",
     intensity: "High",
+    marks: 4,
     question: "A 6-mark question asks you to \"Advise businesses on how the quality of performance of the administration function can contribute to business success.\" Which of the following statements would earn you marks? (Select all that apply)",
     options: [
       "Using fast and reliable data capturing and processing systems.",
@@ -147,16 +157,29 @@ export default function Home() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [score, setScore] = useState(0);
 
+  const totalMaxMarks = quizData.reduce((acc, q) => acc + q.marks, 0);
+
   const handleSubmit = () => {
     let calculatedScore = 0;
+    
     quizData.forEach((q, idx) => {
       const selected = selectedOptions[idx] || [];
       const correct = q.correctAnswers;
       
-      if (selected.length === correct.length && selected.every(val => correct.includes(val))) {
-        calculatedScore++;
+      if (q.type === "single") {
+        if (selected.length === 1 && selected[0] === correct[0]) {
+          calculatedScore += q.marks;
+        }
+      } else {
+        // Multi-select proportional scoring with bluff penalty
+        const correctSelected = selected.filter(i => correct.includes(i)).length;
+        const incorrectSelected = selected.filter(i => !correct.includes(i)).length;
+        const netCorrect = Math.max(0, correctSelected - incorrectSelected);
+        
+        calculatedScore += Math.round((netCorrect / correct.length) * q.marks);
       }
     });
+    
     setScore(calculatedScore);
     setIsSubmitted(true);
   };
@@ -271,7 +294,7 @@ export default function Home() {
         {isSubmitted && (
           <div className="p-4 bg-blue-50 border-b border-blue-100 text-center">
             <h3 className="text-lg font-bold text-blue-900">Your Score</h3>
-            <p className="text-3xl font-extrabold text-blue-600">{score} / 10</p>
+            <p className="text-3xl font-extrabold text-blue-600">{score} / {totalMaxMarks}</p>
           </div>
         )}
 
@@ -304,7 +327,9 @@ export default function Home() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 flex-1 flex flex-col relative">
           <div className="mb-8">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-3xl font-bold text-gray-800">Question {activeQuestion + 1}</h2>
+              <h2 className="text-3xl font-bold text-gray-800">
+                Question {activeQuestion + 1} <span className="text-gray-400 text-xl font-medium">({currentQ.marks} Marks)</span>
+              </h2>
               <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
                 {currentQ.intensity} Intensity
               </span>
