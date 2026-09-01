@@ -10,114 +10,112 @@ const quizData = [
     intensity: "Low",
     question: "Which Act encourages businesses to invest in the education and training of the South African workforce?",
     options: [
-      "Employment Equity Act (EEA)",
-      "Skills Development Act (SDA)",
-      "Basic Conditions of Employment Act (BCEA)",
-      "Labour Relations Act (LRA)"
-    ]
-  },
-  {
-    type: "single",
-    intensity: "Medium",
-    question: "Jericho Carpets opened a new branch in another province to distribute their carpets. This type of intensive strategy is known as...",
-    options: [
-      "Product development",
-      "Product modification",
-      "Market penetration",
-      "Market development"
-    ]
-  },
-  {
-    type: "multi",
-    intensity: "High (Essay)",
-    question: "Write an essay on the Consumer Protection Act (CPA) focusing on its purpose. Which of the following points should be included? (Select all that apply)",
-    options: [
-      "Establishes national standards to protect consumers",
-      "Protects employers from unfair strikes and labour disputes",
-      "Ensures consumers are not misled by suppliers",
-      "Regulates the minimum wage of workers",
-      "Empowers consumers to take legal action if rights are not upheld"
+      "A) Employment Equity Act (EEA)",
+      "B) Skills Development Act (SDA)",
+      "C) Basic Conditions of Employment Act (BCEA)",
+      "D) Labour Relations Act (LRA)"
     ]
   },
   {
     type: "single",
     intensity: "Low",
-    question: "Name the TWO components of a job analysis.",
+    question: "Jericho Carpets opened a new branch in another province to distribute their carpets. What intensive strategy is this?",
     options: [
-      "Job evaluation and Job rotation",
-      "Recruitment and Selection",
-      "Job description and Job specification",
-      "Performance appraisal and Training"
+      "A) Product development",
+      "B) Product modification",
+      "C) Market penetration",
+      "D) Market development"
     ]
   },
   {
     type: "single",
     intensity: "Medium",
-    question: "Buhle Architecture pays monthly contributions to a common fund to protect workers in the event of workplace accidents. Which Act applies here?",
+    question: "Consider the following statements about the macro environment:\ni. Amandla Distributors has no control over it.\nii. A PESTLE analysis is used to evaluate its challenges.\niii. It includes the business's suppliers and competitors.\n\nWhich of these statements are CORRECT?",
     options: [
-      "Unemployment Insurance Fund (UIF)",
-      "Occupational Health and Safety Act (OHSA)",
-      "Compensation for Occupational Injuries and Diseases Amendment Act (COIDA)",
-      "National Credit Act (NCA)"
-    ]
-  },
-  {
-    type: "multi",
-    intensity: "High (Essay)",
-    question: "Write an essay on the human resources function, specifically the recruitment procedure. Which of these steps are valid parts of the process?",
-    options: [
-      "Evaluate the job and prepare a job analysis",
-      "Draw up a table of advantages and disadvantages of a strategy",
-      "Choose the method of recruitment (internal/external)",
-      "Conduct an environmental analysis using SWOT",
-      "Place the advertisement in the appropriate media"
-    ]
-  },
-  {
-    type: "multi",
-    intensity: "Medium",
-    question: "What are the rights of employers in terms of the Labour Relations Act (LRA)?",
-    options: [
-      "Form employer organisations and bargaining councils",
-      "Force employees to work overtime without pay",
-      "Lockout employees who engage in an unprotected/illegal strike",
-      "Dismiss employees without a valid reason",
-      "Not pay employees who participated in a protected strike for work they did not do"
+      "A) i only",
+      "B) ii and iii",
+      "C) i and ii",
+      "D) i, ii, and iii"
     ]
   },
   {
     type: "single",
     intensity: "Medium",
+    question: "Identify TWO types of defensive strategies from the options below:",
+    options: [
+      "A) Divestiture and Concentric diversification",
+      "B) Retrenchment and Liquidation",
+      "C) Market penetration and Divestiture",
+      "D) Liquidation and Market development"
+    ]
+  },
+  {
+    type: "multi",
+    intensity: "High",
+    question: "In an essay question, if the topic is \"The Consumer Protection Act (CPA) and its purpose\", which of the following points would you add? (Select all that apply)",
+    options: [
+      "Establishes national standards to protect consumers regardless of economic status.",
+      "Empowers consumers to take legal action if their rights are not upheld.",
+      "Ensures consumers are not misled by suppliers.",
+      "Regulates the minimum wage of workers to protect them from exploitation.",
+      "Protects employers from unfair strikes and labour disputes."
+    ]
+  },
+  {
+    type: "single",
+    intensity: "Medium",
+    question: "Buhle Architecture pays monthly contributions to a common fund to protect workers in the event of workplace accidents. Which Act applies here, and what is one advantage for the business?",
+    options: [
+      "A) COIDA; it eliminates time and costs spent on lengthy civil court proceedings.",
+      "B) UIF; employees do not contribute to this fund.",
+      "C) OHSA; it compensates employees for financial distress.",
+      "D) COIDA; it allows businesses to block non-compliant government tenders."
+    ]
+  },
+  {
+    type: "multi",
+    intensity: "High",
+    question: "In an essay question, if the topic is \"The Human Resources Recruitment Procedure\", which of the following steps would you include in your discussion? (Select all that apply)",
+    options: [
+      "Evaluate the job and prepare a job analysis to identify recruitment needs.",
+      "Place the advertisement in the appropriate media that will ensure the best candidates apply.",
+      "Choose the method of recruitment, such as internal or external.",
+      "Draw up a table of advantages and disadvantages of a strategy.",
+      "Conduct an environmental analysis using SWOT."
+    ]
+  },
+  {
+    type: "single",
+    intensity: "Low",
     question: "Bloem Enterprises' CEO effectively communicates the shared vision and mission of the business with employees. Which business function does this represent?",
     options: [
-      "Public relations function",
-      "Human resources function",
-      "General management function",
-      "Marketing function"
+      "A) Public relations function",
+      "B) Human resources function",
+      "C) General management function",
+      "D) Marketing function"
     ]
   },
   {
-    type: "multi",
+    type: "single",
     intensity: "Medium",
-    question: "Identify the types of defensive strategies from the list below.",
+    question: "Consider the following rights of employers in terms of the Labour Relations Act (LRA):\ni. Lockout employees who engage in an unprotected/illegal strike.\nii. Form bargaining councils for collective bargaining purposes.\niii. Force employees to work overtime without pay.\n\nWhich of these are actual rights of the employer?",
     options: [
-      "Divestiture",
-      "Concentric diversification",
-      "Retrenchment",
-      "Market penetration",
-      "Liquidation"
+      "A) i only",
+      "B) i and ii",
+      "C) ii and iii",
+      "D) i, ii, and iii"
     ]
   },
   {
     type: "multi",
-    intensity: "High (Essay)",
-    question: "Advise businesses on how the quality of performance of the administration function can contribute to the success of the business. Which points are valid?",
+    intensity: "High",
+    question: "A 6-mark question asks you to \"Advise businesses on how the quality of performance of the administration function can contribute to business success.\" Which of the following statements would earn you marks? (Select all that apply)",
     options: [
-      "Fast and reliable data capturing and processing systems",
-      "Make reliable information available for quick decision-making",
-      "Implement total quality management to reduce the cost of quality in factories",
-      "Handle complaints quickly and effectively",
-      "Design attractive packaging to increase sales"
+      "Using fast and reliable data capturing and processing systems.",
+      "Making reliable information available for quick decision-making.",
+      "Handling complaints quickly and effectively.",
+      "Implementing total quality management to reduce the cost of quality in factories.",
+      "Designing attractive packaging to increase sales."
     ]
   }
 ];
@@ -214,7 +212,7 @@ export default function Home() {
               </span>
             </div>
             
-            <p className="text-gray-800 text-xl font-medium max-w-3xl mb-8">
+            <p className="text-gray-800 text-xl font-medium max-w-3xl mb-8 whitespace-pre-wrap">
               {currentQ.question}
             </p>
 
