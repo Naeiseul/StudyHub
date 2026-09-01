@@ -137,7 +137,7 @@ const quizData = [
     type: "multi",
     intensity: "High",
     marks: 4,
-    question: "A 6-mark question asks you to \"Advise businesses on how the quality of performance of the administration function can contribute to business success.\" Which of the following statements would earn you marks? (Select all that apply)",
+    question: "Advise businesses on how the quality of performance of the administration function can contribute to business success. Which of the following statements would earn you marks? (Select all that apply)",
     options: [
       "Using fast and reliable data capturing and processing systems.",
       "Making reliable information available for quick decision-making.",
