@@ -5,7 +5,9 @@ import Link from "next/link";
 import Image from "next/image";
 
 export default function AdminEnrollment() {
-  const [fullName, setFullName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [surname, setSurname] = useState("");
+  const [gender, setGender] = useState<"female" | "male">("female");
   const [email, setEmail] = useState("");
   const [capacity, setCapacity] = useState(50);
   const [tempPassword, setTempPassword] = useState("");
@@ -17,6 +19,12 @@ export default function AdminEnrollment() {
     e.preventDefault();
     setError("");
     setResult(null);
+
+    if (!firstName.trim() || !surname.trim() || !email.trim()) {
+      setError("Please fill in First Name, Surname, and Email.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -24,8 +32,10 @@ export default function AdminEnrollment() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          fullName,
-          email,
+          firstName: firstName.trim(),
+          surname: surname.trim(),
+          gender,
+          email: email.trim().toLowerCase(),
           capacity,
           tempPassword: tempPassword.trim() || undefined,
         }),
@@ -37,7 +47,8 @@ export default function AdminEnrollment() {
       }
 
       setResult(data);
-      setFullName("");
+      setFirstName("");
+      setSurname("");
       setEmail("");
       setTempPassword("");
     } catch (err: unknown) {
@@ -48,9 +59,9 @@ export default function AdminEnrollment() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-slate-100 flex flex-col font-[family-name:var(--font-geist-sans)]">
+    <div className="min-h-screen bg-[#08090c] text-slate-100 flex flex-col font-[family-name:var(--font-geist-sans)]">
       {/* Top Header */}
-      <header className="border-b border-white/10 bg-[#12121a]/80 backdrop-blur-md px-6 py-4 flex items-center justify-between">
+      <header className="border-b border-white/10 bg-[#10121a]/90 backdrop-blur-md px-6 py-4 flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <Image
             src="/assets/logo-square.png"
@@ -77,11 +88,11 @@ export default function AdminEnrollment() {
 
       {/* Content */}
       <main className="flex-1 max-w-2xl w-full mx-auto p-6 sm:p-10 flex flex-col justify-center">
-        <div className="bg-[#12121a] border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl">
+        <div className="bg-[#12141d] border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl">
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-white tracking-tight">Enroll Paid Teacher</h2>
             <p className="text-sm text-slate-400 mt-1">
-              Use this form when an educator pays via EFT. It creates their verified account in Supabase and automatically emails them their credentials via Resend.
+              Input the client&apos;s details after receiving their EFT payment. It registers their verified account in Supabase and automatically delivers the academic welcome email via Resend.
             </p>
           </div>
 
@@ -98,10 +109,11 @@ export default function AdminEnrollment() {
               </h3>
               <p className="text-xs text-slate-300 mb-3">
                 {result.emailSent
-                  ? `An email with their login credentials was sent to ${result.data?.email || "their inbox"} via Resend.`
+                  ? `An academic welcome email was sent to ${result.data?.email || "their inbox"} addressing them as ${result.salutation}.`
                   : `Credentials generated. Email status: ${result.emailError || "Check configuration"}`}
               </p>
-              <div className="bg-black/40 rounded-lg p-3 text-xs font-mono text-slate-300 space-y-1">
+              <div className="bg-black/50 rounded-lg p-3 text-xs font-mono text-slate-300 space-y-1 border border-white/5">
+                <p>Salutation: <strong className="text-white">{result.salutation}</strong></p>
                 <p>Email: <strong className="text-white">{result.data?.email}</strong></p>
                 <p>Temp Password: <strong className="text-red-400">{result.tempPassword}</strong></p>
                 <p>Student Capacity: <strong className="text-white">{result.data?.student_capacity}</strong></p>
@@ -110,32 +122,64 @@ export default function AdminEnrollment() {
           )}
 
           <form onSubmit={handleEnroll} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                Teacher Full Name *
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="e.g. Mrs. Sarah Smith"
-                className="w-full bg-[#181824] border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-red-500 transition-colors"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                  First Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Sarah"
+                  className="w-full bg-[#181a24] border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-red-500 transition-colors"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Surname *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Smith"
+                  className="w-full bg-[#181a24] border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-red-500 transition-colors"
+                  value={surname}
+                  onChange={(e) => setSurname(e.target.value)}
+                />
+              </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                Teacher Email Address *
-              </label>
-              <input
-                type="email"
-                required
-                placeholder="e.g. teacher@school.co.za"
-                className="w-full bg-[#181824] border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-red-500 transition-colors"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Gender *
+                </label>
+                <select
+                  value={gender}
+                  onChange={(e) => setGender(e.target.value as "female" | "male")}
+                  className="w-full bg-[#181a24] border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-red-500 transition-colors"
+                >
+                  <option value="female">Female (Ms. / Mrs.)</option>
+                  <option value="male">Male (Mr.)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Email Address *
+                </label>
+                <input
+                  type="email"
+                  required
+                  placeholder="e.g. sarah.smith@school.co.za"
+                  className="w-full bg-[#181a24] border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-red-500 transition-colors"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -147,7 +191,7 @@ export default function AdminEnrollment() {
                   type="number"
                   min={1}
                   max={500}
-                  className="w-full bg-[#181824] border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-red-500 transition-colors"
+                  className="w-full bg-[#181a24] border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-red-500 transition-colors"
                   value={capacity}
                   onChange={(e) => setCapacity(Number(e.target.value))}
                 />
@@ -160,7 +204,7 @@ export default function AdminEnrollment() {
                 <input
                   type="text"
                   placeholder="Auto-generated if empty"
-                  className="w-full bg-[#181824] border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-red-500 transition-colors"
+                  className="w-full bg-[#181a24] border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-red-500 transition-colors"
                   value={tempPassword}
                   onChange={(e) => setTempPassword(e.target.value)}
                 />
@@ -170,7 +214,7 @@ export default function AdminEnrollment() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-4 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg shadow-red-600/20 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full mt-5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg shadow-red-600/20 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
             >
               {loading ? (
                 <>

@@ -13,12 +13,20 @@ create table if not exists public.profiles (
   email text,
   role text default 'student' check (role in ('teacher', 'student', 'admin')),
   full_name text,
+  first_name text,
+  surname text,
+  gender text,
   must_change_password boolean default false,
   student_capacity integer default 20,
   created_by uuid references public.profiles(id) on delete set null,
   created_at timestamptz default timezone('utc', now()),
   updated_at timestamptz default timezone('utc', now())
 );
+
+-- Alter table safely in case table already existed
+alter table public.profiles add column if not exists first_name text;
+alter table public.profiles add column if not exists surname text;
+alter table public.profiles add column if not exists gender text;
 
 -- Enable RLS on profiles
 alter table public.profiles enable row level security;
@@ -72,23 +80,29 @@ returns trigger
 language plpgsql
 security definer
 set search_path = public, extensions, auth
-as 
+as $$
 begin
-  insert into public.profiles (id, email, full_name, role, must_change_password)
+  insert into public.profiles (id, email, full_name, first_name, surname, gender, role, must_change_password)
   values (
     new.id,
     new.email,
     coalesce(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)),
+    new.raw_user_meta_data->>'first_name',
+    new.raw_user_meta_data->>'surname',
+    new.raw_user_meta_data->>'gender',
     coalesce(new.raw_user_meta_data->>'role', 'teacher'),
     coalesce((new.raw_user_meta_data->>'must_change_password')::boolean, false)
   )
   on conflict (id) do update set
     email = excluded.email,
     full_name = coalesce(excluded.full_name, public.profiles.full_name),
+    first_name = coalesce(excluded.first_name, public.profiles.first_name),
+    surname = coalesce(excluded.surname, public.profiles.surname),
+    gender = coalesce(excluded.gender, public.profiles.gender),
     role = coalesce(excluded.role, public.profiles.role);
   return new;
 end;
-;
+$$;
 
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
@@ -96,26 +110,39 @@ create trigger on_auth_user_created
   for each row execute procedure public.handle_new_user();
 
 -- 5. Function: enroll_paid_teacher
--- Can be called with: select public.enroll_paid_teacher('client@school.co.za', 'Mrs. Smith');
--- If password is omitted, it auto-generates a secure random one!
+-- Takes: Email, First Name, Surname, Gender, Capacity, Temp Password
 create or replace function public.enroll_paid_teacher(
   p_email text,
-  p_full_name text,
-  p_temp_password text default null,
-  p_capacity integer default 50
+  p_first_name text,
+  p_surname text,
+  p_gender text default 'other',
+  p_capacity integer default 50,
+  p_temp_password text default null
 )
 returns jsonb
 language plpgsql
 security definer
 set search_path = public, extensions, auth
-as 
+as $$
 declare
   v_user_id uuid;
   v_plain_pw text;
   v_encrypted_pw text;
-  v_email_template text;
+  v_full_name text;
+  v_salutation text;
 begin
-  -- If password not provided, generate a random temporary password like Study#8374
+  v_full_name := trim(p_first_name) || ' ' || trim(p_surname);
+
+  -- Academic salutation
+  if lower(trim(p_gender)) in ('male', 'm', 'mr') then
+    v_salutation := 'Mr. ' || trim(p_surname);
+  elsif lower(trim(p_gender)) in ('female', 'f', 'ms', 'mrs') then
+    v_salutation := 'Ms. ' || trim(p_surname);
+  else
+    v_salutation := v_full_name;
+  end if;
+
+  -- Generate random temporary password if not provided
   if p_temp_password is null or trim(p_temp_password) = '' then
     v_plain_pw := 'Study#' || floor(1000 + random() * 9000)::text;
   else
@@ -132,17 +159,23 @@ begin
         email_confirmed_at = coalesce(email_confirmed_at, now()),
         raw_user_meta_data = coalesce(raw_user_meta_data, '{}'::jsonb) || jsonb_build_object(
           'role', 'teacher',
-          'name', p_full_name,
+          'name', v_full_name,
+          'first_name', trim(p_first_name),
+          'surname', trim(p_surname),
+          'gender', trim(p_gender),
           'must_change_password', true
         ),
         updated_at = now()
     where id = v_user_id;
 
-    insert into public.profiles (id, email, role, full_name, must_change_password, student_capacity, updated_at)
-    values (v_user_id, lower(trim(p_email)), 'teacher', p_full_name, true, p_capacity, now())
+    insert into public.profiles (id, email, role, full_name, first_name, surname, gender, must_change_password, student_capacity, updated_at)
+    values (v_user_id, lower(trim(p_email)), 'teacher', v_full_name, trim(p_first_name), trim(p_surname), trim(p_gender), true, p_capacity, now())
     on conflict (id) do update set
       role = 'teacher',
-      full_name = p_full_name,
+      full_name = v_full_name,
+      first_name = trim(p_first_name),
+      surname = trim(p_surname),
+      gender = trim(p_gender),
       must_change_password = true,
       student_capacity = p_capacity,
       updated_at = now();
@@ -169,40 +202,38 @@ begin
       v_encrypted_pw,
       now(),
       '{"provider":"email","providers":["email"]}'::jsonb,
-      jsonb_build_object('role', 'teacher', 'name', p_full_name, 'must_change_password', true),
+      jsonb_build_object('role', 'teacher', 'name', v_full_name, 'first_name', trim(p_first_name), 'surname', trim(p_surname), 'gender', trim(p_gender), 'must_change_password', true),
       now(),
       now()
     );
 
-    insert into public.profiles (id, email, role, full_name, must_change_password, student_capacity)
-    values (v_user_id, lower(trim(p_email)), 'teacher', p_full_name, true, p_capacity)
+    insert into public.profiles (id, email, role, full_name, first_name, surname, gender, must_change_password, student_capacity)
+    values (v_user_id, lower(trim(p_email)), 'teacher', v_full_name, trim(p_first_name), trim(p_surname), trim(p_gender), true, p_capacity)
     on conflict (id) do update set
       role = 'teacher',
-      full_name = p_full_name,
+      full_name = v_full_name,
+      first_name = trim(p_first_name),
+      surname = trim(p_surname),
+      gender = trim(p_gender),
       must_change_password = true,
       student_capacity = p_capacity;
   end if;
-
-  v_email_template := 'Dear ' || p_full_name || E',\n\n' ||
-    'Your StudyHub Educator account is ready!\n\n' ||
-    'Portal Login: https://studyhub.logtraq.co.za\n' ||
-    'Email: ' || lower(trim(p_email)) || E'\n' ||
-    'Temporary Password: ' || v_plain_pw || E'\n\n' ||
-    'Note: For your security, you will be asked to choose your own private password on your first login.\n\n' ||
-    'Best regards,\nStudyHub / LogTraq Team';
 
   return jsonb_build_object(
     'success', true,
     'user_id', v_user_id,
     'email', lower(trim(p_email)),
-    'full_name', p_full_name,
+    'first_name', trim(p_first_name),
+    'surname', trim(p_surname),
+    'gender', trim(p_gender),
+    'salutation', v_salutation,
+    'full_name', v_full_name,
     'role', 'teacher',
     'temp_password', v_plain_pw,
-    'student_capacity', p_capacity,
-    'welcome_email', v_email_template
+    'student_capacity', p_capacity
   );
 end;
-;
+$$;
 
 -- 6. Function: create_student_invitation
 create or replace function public.create_student_invitation(
@@ -213,7 +244,7 @@ returns jsonb
 language plpgsql
 security definer
 set search_path = public, extensions, auth
-as 
+as $$
 declare
   v_teacher_id uuid;
   v_teacher_role text;
@@ -260,7 +291,7 @@ begin
     'temp_password', v_temp_pw
   );
 end;
-;
+$$;
 
 -- 7. Function: claim_student_invite
 create or replace function public.claim_student_invite(
@@ -270,7 +301,7 @@ returns jsonb
 language plpgsql
 security definer
 set search_path = public, extensions, auth
-as 
+as $$
 declare
   v_student_id uuid;
   v_invite record;
@@ -308,7 +339,7 @@ begin
     'student_name', v_invite.student_name
   );
 end;
-;
+$$;
 
 -- 8. Function: mark_password_changed
 create or replace function public.mark_password_changed()
@@ -316,7 +347,7 @@ returns boolean
 language plpgsql
 security definer
 set search_path = public, extensions, auth
-as 
+as $$
 begin
   update public.profiles
   set must_change_password = false, updated_at = now()
@@ -329,4 +360,4 @@ begin
 
   return true;
 end;
-;
+$$;

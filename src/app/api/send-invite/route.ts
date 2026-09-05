@@ -3,7 +3,7 @@
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { type, to, name, tempPassword, inviteCode, teacherName } = body;
+    const { type, to, name, surname, gender, tempPassword, inviteCode, teacherName } = body;
 
     if (!to) {
       return NextResponse.json({ error: "Missing recipient email" }, { status: 400 });
@@ -17,54 +17,115 @@ export async function POST(request: Request) {
     }
 
     const isTeacher = type === "teacher";
-    const subject = isTeacher
-      ? "Welcome to StudyHub! Your Educator Account Details"
-      : `${teacherName ? teacherName + " has enrolled you in" : "You are enrolled in"} StudyHub`;
 
-    const recipientName = name || (isTeacher ? "Educator" : "Student");
+    // Academic salutation based on gender and surname
+    let salutation = name || (isTeacher ? "Educator" : "Student");
+    if (surname && surname.trim()) {
+      const g = (gender || "").toLowerCase().trim();
+      if (g === "male" || g === "m" || g === "mr") {
+        salutation = `Mr. ${surname.trim()}`;
+      } else if (g === "female" || g === "f" || g === "ms" || g === "mrs") {
+        salutation = `Ms. ${surname.trim()}`;
+      } else if (name) {
+        salutation = `${name.trim()} ${surname.trim()}`;
+      }
+    }
+
+    const subject = isTeacher
+      ? "Welcome to StudyHub | Your Educator Account Details"
+      : `${teacherName ? teacherName + " has enrolled you in" : "You have been enrolled in"} StudyHub`;
+
+    const bannerUrl = "https://studyhub.logtraq.co.za/assets/email-banner.jpg";
 
     const html = isTeacher
       ? `
       <!DOCTYPE html>
       <html>
-      <head><meta charset="utf-8"><title>${subject}</title></head>
-      <body style="margin: 0; padding: 30px 15px; background-color: #0a0a0f; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f1f5f9;">
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 580px; margin: 0 auto; background: #12121a; border-radius: 14px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${subject}</title>
+      </head>
+      <body style="margin: 0; padding: 36px 12px; background-color: #08090c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 14px; overflow: hidden; box-shadow: 0 20px 45px rgba(0, 0, 0, 0.6); border: 1px solid rgba(255,255,255,0.08);">
+          <!-- Atmospheric Academic Banner -->
           <tr>
-            <td style="background: linear-gradient(135deg, #b82e2e 0%, #821c1c 100%); padding: 32px 24px; text-align: center;">
-              <h1 style="margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.5px; color: #ffffff;">StudyHub Education</h1>
-              <p style="margin: 6px 0 0; font-size: 14px; color: #fed7d7;">LogTraq Learning & Educator Portal</p>
+            <td style="padding: 0; background: #111319; text-align: center;">
+              <img src="${bannerUrl}" alt="StudyHub Education" width="580" style="width: 100%; max-width: 580px; height: auto; display: block; object-fit: cover; border-bottom: 3px solid #b82e2e;" />
             </td>
           </tr>
+
+          <!-- Light Elegant Container -->
           <tr>
-            <td style="padding: 32px 28px;">
-              <h2 style="font-size: 19px; margin: 0 0 16px; color: #ffffff;">Dear ${recipientName},</h2>
-              <p style="font-size: 15px; line-height: 1.6; color: #cbd5e1; margin: 0 0 24px;">
-                Your EFT payment has been received and your <strong>StudyHub Educator Account</strong> is now active. You have full access to manage your students and view curriculum modules.
+            <td style="padding: 34px 34px 10px; background-color: #ffffff; text-align: center;">
+              <p style="margin: 0 0 6px; font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase; color: #b82e2e; font-weight: 700;">
+                YOUR EDUCATOR ACCESS IS ACTIVE
               </p>
-              <div style="background: #1a1a24; border: 1px solid rgba(184,46,46,0.3); border-radius: 10px; padding: 20px; margin-bottom: 26px;">
-                <p style="margin: 0 0 12px; font-size: 14px; color: #94a3b8;">
-                  <strong>Login Email:</strong> <span style="color: #ffffff; margin-left: 8px;">${to}</span>
-                </p>
-                <p style="margin: 0; font-size: 14px; color: #94a3b8;">
-                  <strong>Temporary Password:</strong>
-                  <code style="display: inline-block; margin-left: 8px; background: #b82e2e; color: #ffffff; padding: 4px 10px; border-radius: 5px; font-size: 15px; font-weight: bold; letter-spacing: 1px;">${tempPassword}</code>
-                </p>
-              </div>
-              <div style="text-align: center; margin: 28px 0;">
-                <a href="https://studyhub.logtraq.co.za/home" style="display: inline-block; background: #b82e2e; color: #ffffff; font-weight: 700; font-size: 15px; padding: 14px 32px; text-decoration: none; border-radius: 8px; box-shadow: 0 4px 12px rgba(184,46,46,0.4);">
-                  Log In to Educator Portal &rarr;
+              <h1 style="margin: 0 0 8px; font-size: 28px; font-weight: 800; letter-spacing: 1px; color: #0f172a;">
+                WELCOME
+              </h1>
+              <p style="margin: 0 0 24px; font-size: 14px; color: #64748b;">
+                We are thrilled to welcome you to the StudyHub Learning Network.
+              </p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding: 0 34px 36px; background-color: #ffffff;">
+              <p style="font-size: 15px; color: #1e293b; line-height: 1.6; margin: 0 0 14px; font-weight: 600;">
+                Dear ${salutation},
+              </p>
+              <p style="font-size: 14px; color: #475569; line-height: 1.65; margin: 0 0 24px;">
+                Your EFT enrollment has been processed and confirmed. Below are your official account credentials to access your Educator Portal, view curriculum modules, and manage student enrollments.
+              </p>
+
+              <!-- Credentials Table -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 26px; overflow: hidden;">
+                <tr>
+                  <td style="padding: 13px 18px; font-size: 13px; color: #64748b; border-bottom: 1px solid #e2e8f0; width: 140px;">
+                    Portal Address
+                  </td>
+                  <td style="padding: 13px 18px; font-size: 13px; color: #0f172a; font-weight: 600; border-bottom: 1px solid #e2e8f0;">
+                    studyhub.logtraq.co.za
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 13px 18px; font-size: 13px; color: #64748b; border-bottom: 1px solid #e2e8f0;">
+                    Login Email
+                  </td>
+                  <td style="padding: 13px 18px; font-size: 13px; color: #0f172a; font-weight: 600; border-bottom: 1px solid #e2e8f0;">
+                    ${to}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 13px 18px; font-size: 13px; color: #64748b;">
+                    Temporary Password
+                  </td>
+                  <td style="padding: 13px 18px; font-size: 13px;">
+                    <code style="font-family: monospace; font-size: 15px; font-weight: 700; color: #b82e2e; background: #fee2e2; padding: 4px 10px; border-radius: 5px; letter-spacing: 1px; display: inline-block;">${tempPassword}</code>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Call to Action Button -->
+              <div style="text-align: center; margin: 30px 0 24px;">
+                <a href="https://studyhub.logtraq.co.za/home" style="display: inline-block; background-color: #b82e2e; color: #ffffff; font-weight: 700; font-size: 14px; letter-spacing: 0.5px; padding: 14px 34px; text-decoration: none; border-radius: 8px; box-shadow: 0 4px 14px rgba(184, 46, 46, 0.28);">
+                  LOG IN TO EDUCATOR PORTAL &rarr;
                 </a>
               </div>
-              <div style="background: rgba(255,255,255,0.03); border-left: 3px solid #b82e2e; padding: 12px 16px; margin: 24px 0 0; border-radius: 4px;">
-                <p style="margin: 0; font-size: 13px; color: #94a3b8; line-height: 1.5;">
-                  🔒 <strong>First Login Security:</strong> You will be prompted to choose your own private, permanent password immediately upon logging in.
+
+              <!-- Clean Security Note (no question marks, no broken emojis) -->
+              <div style="border-top: 1px solid #e2e8f0; padding-top: 16px; margin-top: 24px;">
+                <p style="margin: 0; font-size: 12px; color: #64748b; line-height: 1.55;">
+                  <strong>First Login Security:</strong> For your security, you will be prompted to choose your own private, permanent password immediately upon logging in.
                 </p>
               </div>
             </td>
           </tr>
+
+          <!-- Subtle Footer -->
           <tr>
-            <td style="background: #0d0d14; padding: 18px 24px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid rgba(255,255,255,0.05);">
+            <td style="background-color: #0b0c10; padding: 22px 24px; text-align: center; font-size: 11px; color: #64748b; border-top: 1px solid rgba(255,255,255,0.06);">
               StudyHub · A division of LogTraq · <a href="https://studyhub.logtraq.co.za" style="color: #b82e2e; text-decoration: none;">studyhub.logtraq.co.za</a>
             </td>
           </tr>
@@ -75,50 +136,101 @@ export async function POST(request: Request) {
       : `
       <!DOCTYPE html>
       <html>
-      <head><meta charset="utf-8"><title>${subject}</title></head>
-      <body style="margin: 0; padding: 30px 15px; background-color: #0a0a0f; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f1f5f9;">
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 580px; margin: 0 auto; background: #12121a; border-radius: 14px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${subject}</title>
+      </head>
+      <body style="margin: 0; padding: 36px 12px; background-color: #08090c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 14px; overflow: hidden; box-shadow: 0 20px 45px rgba(0, 0, 0, 0.6); border: 1px solid rgba(255,255,255,0.08);">
+          <!-- Atmospheric Academic Banner -->
           <tr>
-            <td style="background: linear-gradient(135deg, #b82e2e 0%, #821c1c 100%); padding: 32px 24px; text-align: center;">
-              <h1 style="margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.5px; color: #ffffff;">StudyHub</h1>
-              <p style="margin: 6px 0 0; font-size: 14px; color: #fed7d7;">Student Portal Invitation</p>
+            <td style="padding: 0; background: #111319; text-align: center;">
+              <img src="${bannerUrl}" alt="StudyHub Learning" width="580" style="width: 100%; max-width: 580px; height: auto; display: block; object-fit: cover; border-bottom: 3px solid #b82e2e;" />
             </td>
           </tr>
+
+          <!-- Light Elegant Container -->
           <tr>
-            <td style="padding: 32px 28px;">
-              <h2 style="font-size: 19px; margin: 0 0 16px; color: #ffffff;">Hi ${recipientName},</h2>
-              <p style="font-size: 15px; line-height: 1.6; color: #cbd5e1; margin: 0 0 24px;">
-                ${teacherName ? `<strong>${teacherName}</strong> has enrolled you in` : "You have been enrolled in"} the <strong>StudyHub Learning Portal</strong>. Here are your login details to get started:
+            <td style="padding: 34px 34px 10px; background-color: #ffffff; text-align: center;">
+              <p style="margin: 0 0 6px; font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase; color: #b82e2e; font-weight: 700;">
+                STUDENT PORTAL INVITATION
               </p>
-              <div style="background: #1a1a24; border: 1px solid rgba(184,46,46,0.3); border-radius: 10px; padding: 20px; margin-bottom: 26px;">
-                <p style="margin: 0 0 12px; font-size: 14px; color: #94a3b8;">
-                  <strong>Login Email:</strong> <span style="color: #ffffff; margin-left: 8px;">${to}</span>
-                </p>
+              <h1 style="margin: 0 0 8px; font-size: 28px; font-weight: 800; letter-spacing: 1px; color: #0f172a;">
+                WELCOME
+              </h1>
+              <p style="margin: 0 0 24px; font-size: 14px; color: #64748b;">
+                You have been enrolled into the StudyHub Learning Portal.
+              </p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding: 0 34px 36px; background-color: #ffffff;">
+              <p style="font-size: 15px; color: #1e293b; line-height: 1.6; margin: 0 0 14px; font-weight: 600;">
+                Hi ${name || "Student"},
+              </p>
+              <p style="font-size: 14px; color: #475569; line-height: 1.65; margin: 0 0 24px;">
+                ${teacherName ? `<strong>${teacherName}</strong> has invited you to join` : "You have been invited to join"} StudyHub. Below are your official login credentials to access your student learning portal:
+              </p>
+
+              <!-- Credentials Table -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 26px; overflow: hidden;">
+                <tr>
+                  <td style="padding: 13px 18px; font-size: 13px; color: #64748b; border-bottom: 1px solid #e2e8f0; width: 140px;">
+                    Portal Address
+                  </td>
+                  <td style="padding: 13px 18px; font-size: 13px; color: #0f172a; font-weight: 600; border-bottom: 1px solid #e2e8f0;">
+                    studyhub.logtraq.co.za
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 13px 18px; font-size: 13px; color: #64748b; border-bottom: 1px solid #e2e8f0;">
+                    Login Email
+                  </td>
+                  <td style="padding: 13px 18px; font-size: 13px; color: #0f172a; font-weight: 600; border-bottom: 1px solid #e2e8f0;">
+                    ${to}
+                  </td>
+                </tr>
                 ${inviteCode ? `
-                <p style="margin: 0 0 12px; font-size: 14px; color: #94a3b8;">
-                  <strong>Student Code:</strong>
-                  <code style="display: inline-block; margin-left: 8px; background: rgba(255,255,255,0.1); color: #ff8080; padding: 3px 8px; border-radius: 4px; font-size: 14px; font-weight: bold; letter-spacing: 1px;">${inviteCode}</code>
-                </p>
+                <tr>
+                  <td style="padding: 13px 18px; font-size: 13px; color: #64748b; border-bottom: 1px solid #e2e8f0;">
+                    Student Code
+                  </td>
+                  <td style="padding: 13px 18px; font-size: 13px; border-bottom: 1px solid #e2e8f0;">
+                    <code style="font-family: monospace; font-size: 14px; font-weight: 700; color: #b82e2e; background: rgba(184,46,46,0.08); padding: 3px 8px; border-radius: 4px; letter-spacing: 1px; display: inline-block;">${inviteCode}</code>
+                  </td>
+                </tr>
                 ` : ""}
-                <p style="margin: 0; font-size: 14px; color: #94a3b8;">
-                  <strong>Temporary Password:</strong>
-                  <code style="display: inline-block; margin-left: 8px; background: #b82e2e; color: #ffffff; padding: 4px 10px; border-radius: 5px; font-size: 15px; font-weight: bold; letter-spacing: 1px;">${tempPassword}</code>
-                </p>
-              </div>
-              <div style="text-align: center; margin: 28px 0;">
-                <a href="https://studyhub.logtraq.co.za/home" style="display: inline-block; background: #b82e2e; color: #ffffff; font-weight: 700; font-size: 15px; padding: 14px 32px; text-decoration: none; border-radius: 8px; box-shadow: 0 4px 12px rgba(184,46,46,0.4);">
-                  Log In to Student Portal &rarr;
+                <tr>
+                  <td style="padding: 13px 18px; font-size: 13px; color: #64748b;">
+                    Temporary Password
+                  </td>
+                  <td style="padding: 13px 18px; font-size: 13px;">
+                    <code style="font-family: monospace; font-size: 15px; font-weight: 700; color: #b82e2e; background: #fee2e2; padding: 4px 10px; border-radius: 5px; letter-spacing: 1px; display: inline-block;">${tempPassword}</code>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Call to Action Button -->
+              <div style="text-align: center; margin: 30px 0 24px;">
+                <a href="https://studyhub.logtraq.co.za/home" style="display: inline-block; background-color: #b82e2e; color: #ffffff; font-weight: 700; font-size: 14px; letter-spacing: 0.5px; padding: 14px 34px; text-decoration: none; border-radius: 8px; box-shadow: 0 4px 14px rgba(184, 46, 46, 0.28);">
+                  LOG IN TO STUDENT PORTAL &rarr;
                 </a>
               </div>
-              <div style="background: rgba(255,255,255,0.03); border-left: 3px solid #b82e2e; padding: 12px 16px; margin: 24px 0 0; border-radius: 4px;">
-                <p style="margin: 0; font-size: 13px; color: #94a3b8; line-height: 1.5;">
-                  🔒 <strong>First Login Security:</strong> When you log in with your temporary password, you will be prompted to set your personal password.
+
+              <!-- Clean Security Note (no question marks, no broken emojis) -->
+              <div style="border-top: 1px solid #e2e8f0; padding-top: 16px; margin-top: 24px;">
+                <p style="margin: 0; font-size: 12px; color: #64748b; line-height: 1.55;">
+                  <strong>First Login Security:</strong> When you log in with your temporary password, you will be prompted to set your personal permanent password.
                 </p>
               </div>
             </td>
           </tr>
+
+          <!-- Subtle Footer -->
           <tr>
-            <td style="background: #0d0d14; padding: 18px 24px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid rgba(255,255,255,0.05);">
+            <td style="background-color: #0b0c10; padding: 22px 24px; text-align: center; font-size: 11px; color: #64748b; border-top: 1px solid rgba(255,255,255,0.06);">
               StudyHub · A division of LogTraq · <a href="https://studyhub.logtraq.co.za" style="color: #b82e2e; text-decoration: none;">studyhub.logtraq.co.za</a>
             </td>
           </tr>
