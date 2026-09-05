@@ -254,7 +254,7 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify({
         from: emailFrom,
-        to: [to],
+        to: [to.trim().toLowerCase()],
         reply_to: "info@logtraq.co.za",
         subject,
         html,
