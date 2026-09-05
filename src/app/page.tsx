@@ -16,8 +16,8 @@ export default function Splash() {
   }, [router]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-white font-[family-name:var(--font-geist-sans)]">
-      <h1 className="text-4xl font-bold tracking-tight sm:text-6xl text-blue-600 animate-pulse">
+    <div className="flex items-center justify-center min-h-screen bg-[#0a0a0f] font-[family-name:var(--font-geist-sans)]">
+      <h1 className="text-4xl font-bold tracking-tight sm:text-6xl text-red-500 animate-pulse">
         Welcome to StudyHub!
       </h1>
     </div>
