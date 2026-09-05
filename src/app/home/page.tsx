@@ -38,10 +38,24 @@ export default function Home() {
   const [signedInUser, setSignedInUser] = useState<{ email?: string; role?: string } | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
-        const mustChange = session.user.user_metadata?.must_change_password ?? false;
-        if (mustChange) {
+        let mustChange = session.user.user_metadata?.must_change_password ?? false;
+        if (!mustChange) {
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("must_change_password")
+            .eq("id", session.user.id)
+            .maybeSingle();
+          if (prof?.must_change_password) {
+            mustChange = true;
+          }
+        }
+
+        const isInviteOrRecovery = typeof window !== "undefined" &&
+          (window.location.hash.includes("type=invite") || window.location.hash.includes("type=recovery"));
+
+        if (mustChange || isInviteOrRecovery) {
           setForcePasswordUser({ email: session.user.email || "" });
         } else {
           setSignedInUser({
@@ -52,10 +66,24 @@ export default function Home() {
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        const mustChange = session.user.user_metadata?.must_change_password ?? false;
-        if (mustChange) {
+        let mustChange = session.user.user_metadata?.must_change_password ?? false;
+        if (!mustChange) {
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("must_change_password")
+            .eq("id", session.user.id)
+            .maybeSingle();
+          if (prof?.must_change_password) {
+            mustChange = true;
+          }
+        }
+
+        const isInviteOrRecovery = event === "PASSWORD_RECOVERY" || (typeof window !== "undefined" &&
+          (window.location.hash.includes("type=invite") || window.location.hash.includes("type=recovery")));
+
+        if (mustChange || isInviteOrRecovery) {
           setForcePasswordUser({ email: session.user.email || "" });
         } else {
           setSignedInUser({
