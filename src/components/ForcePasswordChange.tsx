@@ -6,10 +6,11 @@ import { supabase } from "@/lib/supabaseClient";
 interface ForcePasswordChangeProps {
   userEmail?: string;
   onSuccess: () => void;
+  onCancel?: () => void;
   theme?: "light" | "dark";
 }
 
-export default function ForcePasswordChange({ userEmail, onSuccess, theme = "dark" }: ForcePasswordChangeProps) {
+export default function ForcePasswordChange({ userEmail, onSuccess, onCancel, theme = "dark" }: ForcePasswordChangeProps) {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -138,6 +139,15 @@ export default function ForcePasswordChange({ userEmail, onSuccess, theme = "dar
           >
             {loading ? "Saving..." : "Save Password"}
           </button>
+          {onCancel && (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="w-full text-xs text-slate-500 hover:text-slate-800 font-medium py-1.5 transition-colors cursor-pointer text-center"
+            >
+              Cancel & Log Out
+            </button>
+          )}
         </form>
       </div>
     );
@@ -200,6 +210,16 @@ export default function ForcePasswordChange({ userEmail, onSuccess, theme = "dar
         <button className="login-btn" type="submit" disabled={loading} style={{ marginTop: "6px" }}>
           {loading ? "Saving Password..." : "Save Password & Enter Portal"}
         </button>
+        {onCancel && (
+          <button
+            type="button"
+            className="auth-switch"
+            onClick={onCancel}
+            style={{ marginTop: "12px" }}
+          >
+            Cancel and Log Out
+          </button>
+        )}
       </form>
     </div>
   );

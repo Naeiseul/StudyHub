@@ -58,7 +58,7 @@ export default function Dashboard() {
         .eq("id", user.id)
         .single();
 
-      const userRole = profData?.role || user.user_metadata?.role || "teacher";
+      const userRole = profData?.role || user.user_metadata?.role || "student";
       const mustChange = profData?.must_change_password ?? user.user_metadata?.must_change_password ?? false;
 
       const currentProfile: Profile = {

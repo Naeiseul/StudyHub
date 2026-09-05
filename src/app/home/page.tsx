@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { supabase } from "@/lib/supabaseClient";
@@ -37,19 +37,26 @@ export default function Home() {
   // Signed in status
   const [signedInUser, setSignedInUser] = useState<{ email?: string; role?: string } | null>(null);
 
+  // Active login role attempt ref to prevent race condition with auth listeners
+  const activeLoginRoleRef = useRef<"teacher" | "student" | null>(null);
+
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         let mustChange = session.user.user_metadata?.must_change_password ?? false;
-        if (!mustChange) {
-          const { data: prof } = await supabase
-            .from("profiles")
-            .select("must_change_password")
-            .eq("id", session.user.id)
-            .maybeSingle();
-          if (prof?.must_change_password) {
-            mustChange = true;
-          }
+        let userRole = session.user.user_metadata?.role || "student";
+
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("must_change_password, role")
+          .eq("id", session.user.id)
+          .maybeSingle();
+
+        if (prof?.must_change_password) {
+          mustChange = true;
+        }
+        if (prof?.role) {
+          userRole = prof.role;
         }
 
         const isInviteOrRecovery = typeof window !== "undefined" &&
@@ -60,24 +67,33 @@ export default function Home() {
         } else {
           setSignedInUser({
             email: session.user.email,
-            role: session.user.user_metadata?.role || "student",
+            role: userRole,
           });
         }
       }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // If a form login is actively in progress, allow handleLogin to strictly validate role first
+      if (activeLoginRoleRef.current) {
+        return;
+      }
+
       if (session?.user) {
         let mustChange = session.user.user_metadata?.must_change_password ?? false;
-        if (!mustChange) {
-          const { data: prof } = await supabase
-            .from("profiles")
-            .select("must_change_password")
-            .eq("id", session.user.id)
-            .maybeSingle();
-          if (prof?.must_change_password) {
-            mustChange = true;
-          }
+        let userRole = session.user.user_metadata?.role || "student";
+
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("must_change_password, role")
+          .eq("id", session.user.id)
+          .maybeSingle();
+
+        if (prof?.must_change_password) {
+          mustChange = true;
+        }
+        if (prof?.role) {
+          userRole = prof.role;
         }
 
         const isInviteOrRecovery = event === "PASSWORD_RECOVERY" || (typeof window !== "undefined" &&
@@ -88,7 +104,7 @@ export default function Home() {
         } else {
           setSignedInUser({
             email: session.user.email,
-            role: session.user.user_metadata?.role || "student",
+            role: userRole,
           });
         }
       } else {
@@ -130,7 +146,10 @@ export default function Home() {
       return;
     }
 
+    const attemptRole = expanded;
+    activeLoginRoleRef.current = attemptRole;
     setLoading(true);
+
     try {
       const { data, error: authErr } = await supabase.auth.signInWithPassword({
         email: email.trim(),
@@ -138,11 +157,41 @@ export default function Home() {
       });
 
       if (authErr) {
+        activeLoginRoleRef.current = null;
         triggerError(authErr.message);
         return;
       }
 
       if (data?.user) {
+        // Query profile for verified database role and must_change_password flag
+        const { data: profData } = await supabase
+          .from("profiles")
+          .select("must_change_password, role")
+          .eq("id", data.user.id)
+          .maybeSingle();
+
+        const userRole = profData?.role || data.user.user_metadata?.role || "student";
+
+        // Strict Role Enforcement: educator cannot log into student tab, student cannot log into teacher tab
+        const isAuthorizedRole =
+          userRole === attemptRole ||
+          (userRole === "admin" && attemptRole === "teacher");
+
+        if (attemptRole && !isAuthorizedRole) {
+          // Immediately purge session so no unauthorized access is granted
+          await supabase.auth.signOut();
+          activeLoginRoleRef.current = null;
+          setForcePasswordUser(null);
+          setSignedInUser(null);
+
+          if (userRole === "teacher") {
+            triggerError("Access denied: This is an Educator account. Please use the Teacher login.");
+          } else {
+            triggerError("Access denied: This is a Student account. Please use the Student login.");
+          }
+          return;
+        }
+
         // If student supplied code on login or profile
         if (inviteCode.trim()) {
           try {
@@ -152,14 +201,9 @@ export default function Home() {
           }
         }
 
-        // Check if user must change password from profiles table or metadata
-        const { data: profData } = await supabase
-          .from("profiles")
-          .select("must_change_password, role")
-          .eq("id", data.user.id)
-          .single();
-
         const mustChange = profData?.must_change_password ?? data.user.user_metadata?.must_change_password ?? false;
+
+        activeLoginRoleRef.current = null;
 
         if (mustChange) {
           setForcePasswordUser({ email: data.user.email || email });
@@ -168,6 +212,7 @@ export default function Home() {
         }
       }
     } catch (err: unknown) {
+      activeLoginRoleRef.current = null;
       const message = err instanceof Error ? err.message : "An unexpected error occurred.";
       triggerError(message);
     } finally {
@@ -307,6 +352,7 @@ export default function Home() {
               setForcePasswordUser(null);
               router.push("/dashboard");
             }}
+            onCancel={handleLogout}
           />
         ) : signedInUser ? (
           <div className="auth-card">
