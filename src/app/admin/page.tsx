@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -21,7 +21,7 @@ export default function AdminEnrollment() {
 
   const handleUnlock = (e: React.FormEvent) => {
     e.preventDefault();
-    if (adminPin.trim() === "2026") {
+    if (adminPin.trim() === "0102") {
       setIsUnlocked(true);
       setPinError("");
     } else {
