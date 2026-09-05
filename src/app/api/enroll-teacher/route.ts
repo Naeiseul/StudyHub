@@ -21,8 +21,11 @@ export async function POST(request: Request) {
 
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-    // Call Supabase RPC to enroll teacher
-    const { data: enrollData, error: enrollError } = await supabase.rpc("enroll_paid_teacher", {
+    // Call Supabase RPC to enroll teacher (supports both 6-arg and 4-arg signatures)
+    let enrollData: any = null;
+    let enrollError: any = null;
+
+    const rpc1 = await supabase.rpc("enroll_paid_teacher", {
       p_email: email.trim().toLowerCase(),
       p_first_name: firstName.trim(),
       p_surname: surname.trim(),
@@ -30,6 +33,20 @@ export async function POST(request: Request) {
       p_capacity: capacity ? Number(capacity) : 50,
       p_temp_password: tempPassword ? tempPassword.trim() : null,
     });
+
+    if (rpc1.error && rpc1.error.message.includes("schema cache")) {
+      const rpc2 = await supabase.rpc("enroll_paid_teacher", {
+        p_email: email.trim().toLowerCase(),
+        p_full_name: `${firstName.trim()} ${surname.trim()}`,
+        p_temp_password: tempPassword ? tempPassword.trim() : null,
+        p_capacity: capacity ? Number(capacity) : 50,
+      });
+      enrollData = rpc2.data;
+      enrollError = rpc2.error;
+    } else {
+      enrollData = rpc1.data;
+      enrollError = rpc1.error;
+    }
 
     if (enrollError) {
       return NextResponse.json({ error: enrollError.message }, { status: 500 });
