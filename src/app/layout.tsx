@@ -17,11 +17,11 @@ export const metadata: Metadata = {
   description: "Your modern learning platform",
   icons: {
     icon: [
-      { url: "/favicon.png?v=3", type: "image/png" },
-      { url: "/favicon.ico?v=3", sizes: "any" },
+      { url: "/favicon-v2.png", type: "image/png" },
+      { url: "/favicon-v2.ico", sizes: "any" },
     ],
-    shortcut: "/favicon.png?v=3",
-    apple: "/favicon.png?v=3",
+    shortcut: "/favicon-v2.png",
+    apple: "/favicon-v2.png",
   },
 };
 
