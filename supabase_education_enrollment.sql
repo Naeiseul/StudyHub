@@ -1,4 +1,4 @@
-﻿-- ==============================================================================
+-- ==============================================================================
 -- StudyHub / LogTraq Education: EFT Controlled Enrollment & Student Invites
 -- Project ID: vqakyvqxqhgcwtpaexjk
 -- ==============================================================================
@@ -6,6 +6,19 @@
 -- 1. Ensure extensions and schema search path
 create extension if not exists pgcrypto with schema extensions;
 set search_path = public, extensions, auth;
+
+-- Fix GoTrue empty string requirements for any existing auth users
+update auth.users
+set
+  confirmation_token = coalesce(confirmation_token, ''),
+  recovery_token = coalesce(recovery_token, ''),
+  email_change_token_new = coalesce(email_change_token_new, ''),
+  email_change = coalesce(email_change, ''),
+  email_change_token_current = coalesce(email_change_token_current, ''),
+  phone_change = coalesce(phone_change, ''),
+  phone_change_token = coalesce(phone_change_token, ''),
+  reauthentication_token = coalesce(reauthentication_token, '')
+where email is not null;
 
 -- 2. Create or extend public.profiles table
 create table if not exists public.profiles (
@@ -157,6 +170,14 @@ begin
     update auth.users
     set encrypted_password = v_encrypted_pw,
         email_confirmed_at = coalesce(email_confirmed_at, now()),
+        confirmation_token = coalesce(confirmation_token, ''),
+        recovery_token = coalesce(recovery_token, ''),
+        email_change_token_new = coalesce(email_change_token_new, ''),
+        email_change = coalesce(email_change, ''),
+        email_change_token_current = coalesce(email_change_token_current, ''),
+        phone_change = coalesce(phone_change, ''),
+        phone_change_token = coalesce(phone_change_token, ''),
+        reauthentication_token = coalesce(reauthentication_token, ''),
         raw_user_meta_data = coalesce(raw_user_meta_data, '{}'::jsonb) || jsonb_build_object(
           'role', 'teacher',
           'name', v_full_name,
@@ -192,7 +213,15 @@ begin
       raw_app_meta_data,
       raw_user_meta_data,
       created_at,
-      updated_at
+      updated_at,
+      confirmation_token,
+      recovery_token,
+      email_change_token_new,
+      email_change,
+      email_change_token_current,
+      phone_change,
+      phone_change_token,
+      reauthentication_token
     ) values (
       v_user_id,
       '00000000-0000-0000-0000-000000000000',
@@ -204,7 +233,15 @@ begin
       '{"provider":"email","providers":["email"]}'::jsonb,
       jsonb_build_object('role', 'teacher', 'name', v_full_name, 'first_name', trim(p_first_name), 'surname', trim(p_surname), 'gender', trim(p_gender), 'must_change_password', true),
       now(),
-      now()
+      now(),
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      ''
     );
 
     insert into public.profiles (id, email, role, full_name, first_name, surname, gender, must_change_password, student_capacity)
