@@ -130,6 +130,24 @@ export default function Dashboard() {
         setInvites((prev) => [newEntry, ...prev]);
         setStudentName("");
         setStudentEmail("");
+
+        // Automatically dispatch invitation email via Resend
+        try {
+          await fetch("/api/send-invite", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              type: "student",
+              to: data.student_email,
+              name: data.student_name,
+              tempPassword: data.temp_password,
+              inviteCode: data.invite_code,
+              teacherName: profile?.full_name || "Your Educator",
+            }),
+          });
+        } catch (mailErr) {
+          console.warn("Resend email dispatch error:", mailErr);
+        }
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to enroll student.";
@@ -308,16 +326,19 @@ Please log in at https://studyhub.logtraq.co.za using your email and temporary p
               {/* Newly Generated Invite Card */}
               {latestInvite && (
                 <div className="mt-6 p-4 rounded-xl bg-green-950/30 border border-green-500/30 animate-fadeIn">
-                  <h3 className="text-xs font-bold text-green-400 uppercase tracking-wider mb-2">
+                  <h3 className="text-xs font-bold text-green-400 uppercase tracking-wider mb-1">
                     ✓ Student Enrolled Successfully!
                   </h3>
-                  <div className="text-xs space-y-1 text-gray-300 font-mono mb-3">
+                  <p className="text-xs text-green-300/80 mb-3">
+                    An email was sent to <strong>{latestInvite.student_email}</strong> via Resend.
+                  </p>
+                  <div className="text-xs space-y-1 text-gray-300 font-mono mb-3 bg-black/40 p-2.5 rounded-lg border border-white/5">
                     <p>Code: <strong className="text-white">{latestInvite.invite_code}</strong></p>
-                    <p>Temp PW: <strong className="text-white">{latestInvite.temp_password}</strong></p>
+                    <p>Temp PW: <strong className="text-red-400">{latestInvite.temp_password}</strong></p>
                   </div>
                   <button
                     onClick={() => copyInviteTemplate(latestInvite)}
-                    className="w-full py-2 bg-green-700 hover:bg-green-600 text-white font-bold text-xs rounded-lg transition-colors"
+                    className="w-full py-2 bg-green-700 hover:bg-green-600 text-white font-bold text-xs rounded-lg transition-colors cursor-pointer"
                   >
                     {copied ? "✓ Copied to Clipboard!" : "Copy Parent Invitation Email"}
                   </button>
