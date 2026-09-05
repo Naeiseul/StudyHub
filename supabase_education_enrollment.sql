@@ -96,11 +96,12 @@ create trigger on_auth_user_created
   for each row execute procedure public.handle_new_user();
 
 -- 5. Function: enroll_paid_teacher
--- Run this in the Supabase SQL editor whenever someone pays via EFT (and to enroll yourself)
+-- Can be called with: select public.enroll_paid_teacher('client@school.co.za', 'Mrs. Smith');
+-- If password is omitted, it auto-generates a secure random one!
 create or replace function public.enroll_paid_teacher(
   p_email text,
   p_full_name text,
-  p_temp_password text,
+  p_temp_password text default null,
   p_capacity integer default 50
 )
 returns jsonb
@@ -110,15 +111,22 @@ set search_path = public, extensions, auth
 as 
 declare
   v_user_id uuid;
+  v_plain_pw text;
   v_encrypted_pw text;
+  v_email_template text;
 begin
-  -- Hash password with bf salt
-  v_encrypted_pw := extensions.crypt(p_temp_password, extensions.gen_salt('bf'));
+  -- If password not provided, generate a random temporary password like Study#8374
+  if p_temp_password is null or trim(p_temp_password) = '' then
+    v_plain_pw := 'Study#' || floor(1000 + random() * 9000)::text;
+  else
+    v_plain_pw := trim(p_temp_password);
+  end if;
+
+  v_encrypted_pw := extensions.crypt(v_plain_pw, extensions.gen_salt('bf'));
 
   select id into v_user_id from auth.users where email = lower(trim(p_email));
 
   if v_user_id is not null then
-    -- Update existing user credentials and flag for password change
     update auth.users
     set encrypted_password = v_encrypted_pw,
         email_confirmed_at = coalesce(email_confirmed_at, now()),
@@ -138,18 +146,7 @@ begin
       must_change_password = true,
       student_capacity = p_capacity,
       updated_at = now();
-
-    return jsonb_build_object(
-      'success', true,
-      'action', 'updated',
-      'user_id', v_user_id,
-      'email', lower(trim(p_email)),
-      'role', 'teacher',
-      'must_change_password', true,
-      'student_capacity', p_capacity
-    );
   else
-    -- Create new user with confirmed email
     v_user_id := gen_random_uuid();
     insert into auth.users (
       id,
@@ -184,17 +181,26 @@ begin
       full_name = p_full_name,
       must_change_password = true,
       student_capacity = p_capacity;
-
-    return jsonb_build_object(
-      'success', true,
-      'action', 'created',
-      'user_id', v_user_id,
-      'email', lower(trim(p_email)),
-      'role', 'teacher',
-      'must_change_password', true,
-      'student_capacity', p_capacity
-    );
   end if;
+
+  v_email_template := 'Dear ' || p_full_name || E',\n\n' ||
+    'Your StudyHub Educator account is ready!\n\n' ||
+    'Portal Login: https://studyhub.logtraq.co.za\n' ||
+    'Email: ' || lower(trim(p_email)) || E'\n' ||
+    'Temporary Password: ' || v_plain_pw || E'\n\n' ||
+    'Note: For your security, you will be asked to choose your own private password on your first login.\n\n' ||
+    'Best regards,\nStudyHub / LogTraq Team';
+
+  return jsonb_build_object(
+    'success', true,
+    'user_id', v_user_id,
+    'email', lower(trim(p_email)),
+    'full_name', p_full_name,
+    'role', 'teacher',
+    'temp_password', v_plain_pw,
+    'student_capacity', p_capacity,
+    'welcome_email', v_email_template
+  );
 end;
 ;
 
@@ -230,7 +236,6 @@ begin
     raise exception 'Only teachers can invite students';
   end if;
 
-  -- Check capacity
   select count(*) into v_current_students
   from public.student_invites
   where teacher_id = v_teacher_id and status in ('pending', 'claimed');
@@ -239,9 +244,7 @@ begin
     raise exception 'Student capacity limit of % reached. Please contact support to upgrade.', v_capacity;
   end if;
 
-  -- Generate unique 6-character code (e.g. STU-A7X9K2)
   v_code := 'STU-' || upper(substring(md5(random()::text || clock_timestamp()::text) from 1 for 6));
-  -- Generate 8-character temporary password
   v_temp_pw := 'Study#' || floor(1000 + random() * 9000)::text;
 
   insert into public.student_invites (teacher_id, student_name, student_email, invite_code, temp_password)
@@ -285,12 +288,10 @@ begin
     raise exception 'Invalid or already claimed invite code';
   end if;
 
-  -- Claim the invite
   update public.student_invites
   set status = 'claimed', claimed_at = now()
   where id = v_invite.id;
 
-  -- Link student to teacher in profiles
   insert into public.profiles (id, email, role, full_name, created_by, must_change_password)
   select v_student_id, email, 'student', v_invite.student_name, v_invite.teacher_id, true
   from auth.users where id = v_student_id
