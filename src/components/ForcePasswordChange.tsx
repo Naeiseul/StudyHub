@@ -6,9 +6,10 @@ import { supabase } from "@/lib/supabaseClient";
 interface ForcePasswordChangeProps {
   userEmail?: string;
   onSuccess: () => void;
+  theme?: "light" | "dark";
 }
 
-export default function ForcePasswordChange({ userEmail, onSuccess }: ForcePasswordChangeProps) {
+export default function ForcePasswordChange({ userEmail, onSuccess, theme = "dark" }: ForcePasswordChangeProps) {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -77,6 +78,70 @@ export default function ForcePasswordChange({ userEmail, onSuccess }: ForcePassw
       setLoading(false);
     }
   };
+
+  if (theme === "light") {
+    return (
+      <div className="w-full text-slate-900">
+        <h3 className="text-base font-bold mb-1">Set Password</h3>
+        {userEmail && <p className="text-xs text-slate-500 mb-4">{userEmail}</p>}
+
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div>
+            <label className="block text-xs font-medium text-slate-700 mb-1" htmlFor="new-password">
+              New Password
+            </label>
+            <div className="relative">
+              <input
+                id="new-password"
+                className={`w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-slate-900 ${
+                  shaking ? "border-red-500" : ""
+                }`}
+                type={showPassword ? "text" : "password"}
+                placeholder="At least 6 characters"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+              />
+              <button
+                type="button"
+                className="absolute right-2.5 top-2.5 text-xs text-slate-500 hover:text-slate-900 font-medium"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-700 mb-1" htmlFor="confirm-password">
+              Confirm Password
+            </label>
+            <input
+              id="confirm-password"
+              className={`w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-slate-900 ${
+                shaking ? "border-red-500" : ""
+              }`}
+              type={showPassword ? "text" : "password"}
+              placeholder="Repeat password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-slate-900 hover:bg-black text-white font-medium py-2 rounded-lg text-sm transition-colors cursor-pointer"
+          >
+            {loading ? "Saving..." : "Save Password"}
+          </button>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div className="auth-card" style={{ maxWidth: "420px", width: "100%", margin: "0 auto" }}>

@@ -182,26 +182,25 @@ Please log in at https://studyhub.logtraq.co.za using your email and temporary p
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#0a0a0f] text-white font-[family-name:var(--font-geist-sans)]">
-        <p className="animate-pulse">Loading your portal...</p>
+      <div className="flex items-center justify-center min-h-screen bg-white text-slate-900 font-sans">
+        <p className="text-sm text-slate-500 animate-pulse">Loading portal...</p>
       </div>
     );
   }
 
   if (!profile) return null;
 
-  // If user must change password, force modal
+  // If user must change password, force view
   if (profile.must_change_password) {
     return (
-      <div className="login-page">
-        <video className="login-video" src="/assets/hero.mp4" autoPlay loop muted playsInline />
-        <div className="login-overlay" />
-        <div className="login-container">
-          <div className="login-title">
-            <Image className="login-logo" src="/assets/logo.png" alt="StudyHub" width={90} height={90} />
-            StudyHub
+      <div className="min-h-screen bg-white text-slate-900 flex items-center justify-center p-6 font-sans">
+        <div className="w-full max-w-sm">
+          <div className="flex items-center gap-2 mb-6 justify-center">
+            <Image src="/assets/logo-square.png" alt="StudyHub" width={32} height={32} className="rounded" />
+            <span className="font-bold text-lg text-slate-900">StudyHub</span>
           </div>
           <ForcePasswordChange
+            theme="light"
             userEmail={profile.email}
             onSuccess={() => {
               setProfile({ ...profile, must_change_password: false });
@@ -217,27 +216,27 @@ Please log in at https://studyhub.logtraq.co.za using your email and temporary p
   const percentUsed = Math.min(100, Math.round((activeCount / capacity) * 100));
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white flex flex-col font-[family-name:var(--font-geist-sans)]">
+    <div className="min-h-screen bg-white text-slate-900 flex flex-col font-sans">
       {/* Top Navbar */}
-      <header className="w-full border-b border-white/10 bg-[#101017]/80 backdrop-blur-md sticky top-0 z-30 px-4 sm:px-8 py-3.5 flex items-center justify-between">
+      <header className="w-full border-b border-slate-200 bg-white px-4 sm:px-8 py-3.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Image src="/assets/logo.png" alt="StudyHub Logo" width={38} height={38} priority />
-          <span className="font-bold text-lg tracking-tight text-white">StudyHub</span>
-          <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-red-500/20 text-red-400 border border-red-500/30 capitalize">
-            {profile.role} Portal
+          <Image src="/assets/logo-square.png" alt="StudyHub" width={28} height={28} className="rounded" priority />
+          <span className="font-bold text-base text-slate-900 tracking-tight">StudyHub</span>
+          <span className="text-xs text-slate-400 capitalize border-l border-slate-200 pl-3 font-medium">
+            {profile.role}
           </span>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           <button
             onClick={() => setShowPasswordChangeModal(true)}
-            className="text-xs sm:text-sm text-gray-300 hover:text-white px-3 py-1.5 rounded-lg border border-white/10 hover:border-white/20 transition-colors"
+            className="text-xs text-slate-600 hover:text-slate-900 font-medium transition-colors"
           >
             Change Password
           </button>
           <button
             onClick={handleLogout}
-            className="text-xs sm:text-sm bg-red-600 hover:bg-red-700 text-white font-semibold px-3.5 py-1.5 rounded-lg transition-colors shadow-sm"
+            className="text-xs text-slate-600 hover:text-slate-900 font-medium transition-colors"
           >
             Log Out
           </button>
@@ -245,25 +244,23 @@ Please log in at https://studyhub.logtraq.co.za using your email and temporary p
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-8 space-y-8">
-        {/* Welcome Banner */}
-        <div className="bg-gradient-to-r from-red-950/40 via-red-900/20 to-neutral-900/40 border border-red-500/20 rounded-2xl p-6 sm:p-8 shadow-xl">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-            Welcome, <span className="text-red-400">{profile.full_name}</span>
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-8 py-8 space-y-8">
+        {/* Overview Header */}
+        <div className="border-b border-slate-200 pb-6">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
+            Welcome, {profile.full_name}
           </h1>
-          <p className="text-gray-400 text-sm mt-1">
-            Logged in as <strong className="text-gray-200">{profile.email}</strong>
-          </p>
+          <p className="text-xs text-slate-500 mt-1">{profile.email}</p>
 
           {profile.role === "teacher" && (
-            <div className="mt-6 pt-6 border-t border-white/10">
-              <div className="flex justify-between text-xs sm:text-sm font-semibold mb-2">
-                <span>Student Capacity Enrolled</span>
-                <span className="text-red-400">{activeCount} / {capacity} Students</span>
+            <div className="mt-4 max-w-xs">
+              <div className="flex justify-between text-xs text-slate-600 font-medium mb-1.5">
+                <span>Enrolled Students</span>
+                <span className="text-slate-900 font-semibold">{activeCount} / {capacity}</span>
               </div>
-              <div className="w-full bg-black/40 h-2.5 rounded-full overflow-hidden border border-white/10">
+              <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                 <div
-                  className="bg-gradient-to-r from-red-600 to-red-400 h-full transition-all duration-500"
+                  className="bg-slate-900 h-full transition-all duration-500"
                   style={{ width: `${percentUsed}%` }}
                 />
               </div>
@@ -273,22 +270,19 @@ Please log in at https://studyhub.logtraq.co.za using your email and temporary p
 
         {/* Teacher Section: Enroll Students */}
         {profile.role === "teacher" ? (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
             {/* Left: Enrollment Form */}
-            <div className="lg:col-span-1 bg-[#12121a] border border-white/10 rounded-2xl p-6 shadow-lg h-fit">
-              <h2 className="text-lg font-bold text-white mb-1">Enroll New Student</h2>
-              <p className="text-xs text-gray-400 mb-5">
-                Generate a student code and login to email to a student or parent.
-              </p>
+            <div className="lg:col-span-1 space-y-4">
+              <h2 className="text-base font-bold text-slate-900">Enroll Student</h2>
 
-              <form onSubmit={handleEnrollStudent} className="space-y-4">
+              <form onSubmit={handleEnrollStudent} className="space-y-3">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1.5">
-                    Student Full Name
+                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                    Student Full Name *
                   </label>
                   <input
                     type="text"
-                    className="w-full bg-[#181822] border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-red-500 transition-colors"
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-slate-900 transition-colors"
                     placeholder="e.g. John Doe"
                     value={studentName}
                     onChange={(e) => setStudentName(e.target.value)}
@@ -297,12 +291,12 @@ Please log in at https://studyhub.logtraq.co.za using your email and temporary p
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1.5">
-                    Student / Parent Email
+                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                    Student / Parent Email *
                   </label>
                   <input
                     type="email"
-                    className="w-full bg-[#181822] border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-red-500 transition-colors"
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-slate-900 transition-colors"
                     placeholder="student@example.com"
                     value={studentEmail}
                     onChange={(e) => setStudentEmail(e.target.value)}
@@ -311,86 +305,72 @@ Please log in at https://studyhub.logtraq.co.za using your email and temporary p
                 </div>
 
                 {enrollError && (
-                  <p className="text-xs text-red-400 font-medium">{enrollError}</p>
+                  <p className="text-xs text-red-600 font-medium">{enrollError}</p>
                 )}
 
                 <button
                   type="submit"
                   disabled={enrolling || activeCount >= capacity}
-                  className="w-full py-3 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-bold rounded-lg text-sm transition-colors shadow-lg shadow-red-950/50"
+                  className="w-full py-2 px-4 bg-slate-900 hover:bg-black disabled:opacity-50 text-white font-medium rounded-lg text-sm transition-colors cursor-pointer"
                 >
-                  {enrolling ? "Enrolling..." : "Generate Student Invite"}
+                  {enrolling ? "Enrolling..." : "Enroll Student"}
                 </button>
               </form>
 
-              {/* Newly Generated Invite Card */}
+              {/* Newly Generated Invite Banner */}
               {latestInvite && (
-                <div className="mt-6 p-4 rounded-xl bg-green-950/30 border border-green-500/30 animate-fadeIn">
-                  <h3 className="text-xs font-bold text-green-400 uppercase tracking-wider mb-1">
-                    ✓ Student Enrolled Successfully!
-                  </h3>
-                  <p className="text-xs text-green-300/80 mb-3">
-                    An email was sent to <strong>{latestInvite.student_email}</strong> via Resend.
+                <div className="mt-4 p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-xs space-y-2">
+                  <p className="font-semibold text-emerald-800">
+                    ✓ Enrolled: {latestInvite.student_name}
                   </p>
-                  <div className="text-xs space-y-1 text-gray-300 font-mono mb-3 bg-black/40 p-2.5 rounded-lg border border-white/5">
-                    <p>Code: <strong className="text-white">{latestInvite.invite_code}</strong></p>
-                    <p>Temp PW: <strong className="text-red-400">{latestInvite.temp_password}</strong></p>
-                  </div>
+                  <p className="text-emerald-700 font-mono">
+                    Code: <strong>{latestInvite.invite_code}</strong> | PW: <strong>{latestInvite.temp_password}</strong>
+                  </p>
                   <button
                     onClick={() => copyInviteTemplate(latestInvite)}
-                    className="w-full py-2 bg-green-700 hover:bg-green-600 text-white font-bold text-xs rounded-lg transition-colors cursor-pointer"
+                    className="w-full py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-medium rounded text-xs transition-colors cursor-pointer"
                   >
-                    {copied ? "✓ Copied to Clipboard!" : "Copy Parent Invitation Email"}
+                    {copied ? "Copied!" : "Copy Details"}
                   </button>
                 </div>
               )}
             </div>
 
             {/* Right: Enrolled Students List */}
-            <div className="lg:col-span-2 bg-[#12121a] border border-white/10 rounded-2xl p-6 shadow-lg flex flex-col">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-white">Enrolled Students ({invites.length})</h2>
-              </div>
+            <div className="lg:col-span-2">
+              <h2 className="text-base font-bold text-slate-900 mb-3">
+                Enrolled Students ({invites.length})
+              </h2>
 
               {invites.length === 0 ? (
-                <div className="text-center py-12 text-gray-500 text-sm">
-                  No students enrolled yet. Use the form on the left to generate student logins.
+                <div className="py-8 text-slate-400 text-sm">
+                  No students enrolled yet.
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto border-t border-slate-200">
                   <table className="w-full text-left text-sm">
                     <thead>
-                      <tr className="border-b border-white/10 text-xs text-gray-400 uppercase tracking-wider">
-                        <th className="pb-3">Student Name</th>
-                        <th className="pb-3">Email</th>
-                        <th className="pb-3">Invite Code</th>
-                        <th className="pb-3">Status</th>
-                        <th className="pb-3 text-right">Actions</th>
+                      <tr className="border-b border-slate-200 text-xs text-slate-500 font-medium">
+                        <th className="py-2.5">Student</th>
+                        <th className="py-2.5">Email</th>
+                        <th className="py-2.5">Invite Code</th>
+                        <th className="py-2.5">Status</th>
+                        <th className="py-2.5 text-right">Action</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-white/5">
+                    <tbody className="divide-y divide-slate-100">
                       {invites.map((inv) => (
-                        <tr key={inv.id} className="hover:bg-white/[0.02]">
-                          <td className="py-3.5 font-medium text-white">{inv.student_name}</td>
-                          <td className="py-3.5 text-gray-400 text-xs">{inv.student_email}</td>
-                          <td className="py-3.5 font-mono text-xs text-red-400 font-bold">{inv.invite_code}</td>
-                          <td className="py-3.5">
-                            <span
-                              className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
-                                inv.status === "claimed"
-                                  ? "bg-green-500/20 text-green-400 border border-green-500/30"
-                                  : "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
-                              }`}
-                            >
-                              {inv.status}
-                            </span>
-                          </td>
-                          <td className="py-3.5 text-right">
+                        <tr key={inv.id} className="hover:bg-slate-50/60">
+                          <td className="py-2.5 font-medium text-slate-900">{inv.student_name}</td>
+                          <td className="py-2.5 text-slate-600 text-xs">{inv.student_email}</td>
+                          <td className="py-2.5 font-mono text-xs text-slate-900 font-semibold">{inv.invite_code}</td>
+                          <td className="py-2.5 text-xs text-slate-600">{inv.status}</td>
+                          <td className="py-2.5 text-right">
                             <button
                               onClick={() => copyInviteTemplate(inv)}
-                              className="text-xs text-gray-300 hover:text-white underline"
+                              className="text-xs text-slate-700 hover:text-black font-medium underline"
                             >
-                              Copy Email
+                              Copy
                             </button>
                           </td>
                         </tr>
@@ -403,40 +383,35 @@ Please log in at https://studyhub.logtraq.co.za using your email and temporary p
           </div>
         ) : (
           /* Student View */
-          <div className="bg-[#12121a] border border-white/10 rounded-2xl p-6 sm:p-8 shadow-lg">
-            <h2 className="text-xl font-bold text-white mb-2">Student Account Status</h2>
-            <p className="text-sm text-gray-400 mb-6">
-              Your account is active. Study tools and revision materials will appear here as your teacher assigns them.
-            </p>
-            <div className="p-4 rounded-xl bg-white/5 border border-white/10 max-w-md">
-              <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Account Security</p>
-              <p className="text-sm text-white font-medium mt-1">Your personal password is set.</p>
-              <button
-                onClick={() => setShowPasswordChangeModal(true)}
-                className="mt-3 text-xs bg-red-600 hover:bg-red-700 text-white font-semibold px-3 py-1.5 rounded-lg transition-colors"
-              >
-                Update Password
-              </button>
-            </div>
+          <div className="space-y-4">
+            <h2 className="text-base font-bold text-slate-900">Student Account</h2>
+            <p className="text-sm text-slate-600">Your account is active.</p>
+            <button
+              onClick={() => setShowPasswordChangeModal(true)}
+              className="text-xs bg-slate-900 hover:bg-black text-white font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              Change Password
+            </button>
           </div>
         )}
       </main>
 
       {/* Manual Password Change Modal */}
       {showPasswordChangeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
-          <div className="relative w-full max-w-md">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="relative w-full max-w-sm bg-white border border-slate-200 rounded-xl p-6 shadow-xl">
             <button
               onClick={() => setShowPasswordChangeModal(false)}
-              className="absolute top-3 right-3 text-gray-400 hover:text-white text-lg font-bold z-10"
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 text-sm font-bold"
             >
               ✕
             </button>
             <ForcePasswordChange
+              theme="light"
               userEmail={profile.email}
               onSuccess={() => {
                 setShowPasswordChangeModal(false);
-                alert("Password successfully updated!");
+                alert("Password updated!");
               }}
             />
           </div>
