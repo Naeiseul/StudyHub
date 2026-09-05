@@ -1,11 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { supabase } from "@/lib/supabaseClient";
+import ForcePasswordChange from "@/components/ForcePasswordChange";
 import "./login.css";
 
 export default function Home() {
+  const router = useRouter();
   const [expanded, setExpanded] = useState<"teacher" | "student" | null>("student");
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   
@@ -23,6 +26,9 @@ export default function Home() {
   const [shaking, setShaking] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Force password change state
+  const [forcePasswordUser, setForcePasswordUser] = useState<{ email: string } | null>(null);
+
   // Password reset state
   const [resetMode, setResetMode] = useState(false);
   const [resetSent, setResetSent] = useState(false);
@@ -34,21 +40,32 @@ export default function Home() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        setSignedInUser({
-          email: session.user.email,
-          role: session.user.user_metadata?.role || "student",
-        });
+        const mustChange = session.user.user_metadata?.must_change_password ?? false;
+        if (mustChange) {
+          setForcePasswordUser({ email: session.user.email || "" });
+        } else {
+          setSignedInUser({
+            email: session.user.email,
+            role: session.user.user_metadata?.role || "student",
+          });
+        }
       }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
-        setSignedInUser({
-          email: session.user.email,
-          role: session.user.user_metadata?.role || "student",
-        });
+        const mustChange = session.user.user_metadata?.must_change_password ?? false;
+        if (mustChange) {
+          setForcePasswordUser({ email: session.user.email || "" });
+        } else {
+          setSignedInUser({
+            email: session.user.email,
+            role: session.user.user_metadata?.role || "student",
+          });
+        }
       } else {
         setSignedInUser(null);
+        setForcePasswordUser(null);
       }
     });
 
@@ -88,17 +105,39 @@ export default function Home() {
     setLoading(true);
     try {
       const { data, error: authErr } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim(),
         password,
       });
 
       if (authErr) {
         triggerError(authErr.message);
-      } else if (data?.user) {
-        setSignedInUser({
-          email: data.user.email,
-          role: expanded || "student",
-        });
+        return;
+      }
+
+      if (data?.user) {
+        // If student supplied code on login or profile
+        if (inviteCode.trim()) {
+          try {
+            await supabase.rpc("claim_student_invite", { p_invite_code: inviteCode.trim() });
+          } catch (e) {
+            console.warn("Invite claim check:", e);
+          }
+        }
+
+        // Check if user must change password from profiles table or metadata
+        const { data: profData } = await supabase
+          .from("profiles")
+          .select("must_change_password, role")
+          .eq("id", data.user.id)
+          .single();
+
+        const mustChange = profData?.must_change_password ?? data.user.user_metadata?.must_change_password ?? false;
+
+        if (mustChange) {
+          setForcePasswordUser({ email: data.user.email || email });
+        } else {
+          router.push("/dashboard");
+        }
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "An unexpected error occurred.";
@@ -135,11 +174,11 @@ export default function Home() {
     setLoading(true);
     try {
       const { data, error: authErr } = await supabase.auth.signUp({
-        email,
+        email: email.trim(),
         password,
         options: {
           data: {
-            name,
+            name: name.trim(),
             role: expanded,
             invite_code: expanded === "student" ? inviteCode.trim().toUpperCase() : undefined,
           },
@@ -149,8 +188,17 @@ export default function Home() {
       if (authErr) {
         triggerError(authErr.message);
       } else if (data?.user) {
+        // If student invite code was provided, attempt to claim it
+        if (expanded === "student" && inviteCode.trim()) {
+          try {
+            await supabase.rpc("claim_student_invite", { p_invite_code: inviteCode.trim() });
+          } catch (e) {
+            console.warn("Could not auto-claim invite:", e);
+          }
+        }
+
         setError("");
-        alert("Account created successfully! Please check your email to verify your account.");
+        alert("Account created successfully! You can now log in.");
         switchAuthMode("login");
       }
     } catch (err: unknown) {
@@ -170,7 +218,7 @@ export default function Home() {
 
     setLoading(true);
     try {
-      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(resetEmail);
+      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(resetEmail.trim());
       if (resetErr) {
         triggerError(resetErr.message);
       } else {
@@ -187,6 +235,7 @@ export default function Home() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setSignedInUser(null);
+    setForcePasswordUser(null);
   };
 
   const isSignup = authMode === "signup";
@@ -223,16 +272,29 @@ export default function Home() {
           StudyHub
         </div>
 
-        {signedInUser ? (
+        {forcePasswordUser ? (
+          <ForcePasswordChange
+            userEmail={forcePasswordUser.email}
+            onSuccess={() => {
+              setForcePasswordUser(null);
+              router.push("/dashboard");
+            }}
+          />
+        ) : signedInUser ? (
           <div className="auth-card">
             <h3 className="auth-desc">Welcome back!</h3>
             <div className="auth-email">{signedInUser.email}</div>
             <p className="auth-desc" style={{ fontSize: "12px", opacity: 0.8 }}>
               Role: <strong style={{ textTransform: "capitalize" }}>{signedInUser.role}</strong>
             </p>
-            <button className="login-btn" onClick={handleLogout}>
-              Log Out
-            </button>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "6px" }}>
+              <button className="login-btn" onClick={() => router.push("/dashboard")}>
+                Go to {signedInUser.role === "teacher" ? "Teacher" : "Student"} Portal →
+              </button>
+              <button className="auth-switch" onClick={handleLogout}>
+                Log Out
+              </button>
+            </div>
           </div>
         ) : resetMode ? (
           <div className="auth-card">
@@ -436,10 +498,10 @@ export default function Home() {
                           id="student-invite"
                           className="login-input login-input-code"
                           type="text"
-                          placeholder="e.g. KT7X2M"
+                          placeholder="e.g. STU-A7X9K2"
                           value={inviteCode}
                           onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                          maxLength={6}
+                          maxLength={10}
                           autoComplete="off"
                           required
                         />
