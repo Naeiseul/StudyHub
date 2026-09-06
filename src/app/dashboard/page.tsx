@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -181,6 +181,8 @@ export default function Dashboard() {
 
   // Password change modal
   const [showPasswordChangeModal, setShowPasswordChangeModal] = useState(false);
+  // Student official statement modal
+  const [showStudentInvoiceModal, setShowStudentInvoiceModal] = useState(false);
 
   // --- Document Generator State (Teacher Operational Feature) ---
   const [docStudentId, setDocStudentId] = useState<string>("");
@@ -640,6 +642,9 @@ export default function Dashboard() {
         name: targetStudent.student_name,
         studentId: targetStudent.invite_code,
         email: targetStudent.student_email,
+        monthlyFee: 1500,
+        totalDebt: 12000,
+        paidAmount: 10000,
       },
       {
         institutionName: "StudyHub Education",
@@ -653,28 +658,56 @@ export default function Dashboard() {
     setGeneratedDocPreview(docHtml);
   };
 
-  const printDocument = () => {
+  const printDocument = (contentHtml?: string) => {
+    const htmlToPrint = typeof contentHtml === "string" && contentHtml ? contentHtml : generatedDocPreview;
+    if (!htmlToPrint) return;
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
         <head>
-          <title>StudyHub Document</title>
+          <title>StudyHub Official Document</title>
+          <base href="${window.location.origin}/" />
           <style>
-            body { margin: 20px; font-family: sans-serif; }
-            @media print { body { margin: 0; } }
+            body { margin: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+            @media print {
+              body { margin: 0; padding: 10mm; }
+              @page { margin: 10mm; }
+            }
           </style>
         </head>
         <body>
-          ${generatedDocPreview}
+          ${htmlToPrint}
           <script>
-            window.onload = function() { window.print(); }
+            window.onload = function() {
+              window.print();
+            }
           </script>
         </body>
       </html>
     `);
     printWindow.document.close();
+  };
+
+  const getStudentInvoiceHtml = () => {
+    return generateDocumentHtml(
+      "student_invoice",
+      {
+        name: profile?.full_name || "Student Account",
+        studentId: "u23489102",
+        email: profile?.email || "student@up.ac.za",
+        programme: "12134002  BSc in Computer Science",
+        address: "Hatfield Campus, Pretoria, Gauteng, 0028",
+      },
+      {
+        institutionName: "StudyHub Education",
+        educatorName: "Academic Administration",
+        contactEmail: "ssc@studyhub.logtraq.co.za",
+        website: "www.studyhub.logtraq.co.za",
+        logoUrl: "/assets/logo.png",
+      }
+    );
   };
 
   // Invoice Generator Execution
@@ -1569,6 +1602,7 @@ export default function Dashboard() {
                             <th className="py-2.5 px-4">Due Date</th>
                             <th className="py-2.5 px-4">Amount</th>
                             <th className="py-2.5 px-4">Status</th>
+                            <th className="py-2.5 px-4 text-right">Action</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -1589,6 +1623,33 @@ export default function Dashboard() {
                                 >
                                   {inv.status === "paid" ? "Paid" : "Pending"}
                                 </span>
+                              </td>
+                              <td className="py-3 px-4 text-right">
+                                <button
+                                  onClick={() => {
+                                    const docHtml = generateDocumentHtml(
+                                      "student_invoice",
+                                      {
+                                        name: inv.studentName,
+                                        studentId: "STU-2026-001",
+                                        email: inv.studentEmail,
+                                        monthlyFee: inv.amount,
+                                        totalDebt: 12000,
+                                        paidAmount: inv.status === "paid" ? 12000 : 10000,
+                                      },
+                                      {
+                                        institutionName: "StudyHub Education",
+                                        educatorName: profile?.full_name || "Lead Educator",
+                                        contactEmail: profile?.email || "info@logtraq.co.za",
+                                        website: "studyhub.logtraq.co.za",
+                                      }
+                                    );
+                                    printDocument(docHtml);
+                                  }}
+                                  className="px-2.5 py-1 border border-slate-200 hover:border-slate-400 text-slate-700 text-[11px] font-bold rounded transition-colors cursor-pointer"
+                                >
+                                  Print Invoice
+                                </button>
                               </td>
                             </tr>
                           ))}
@@ -1837,49 +1898,52 @@ export default function Dashboard() {
             {/* STUDENT SELF-SERVICE DEPARTMENT VIEWS */}
             {/* ========================================================================= */}
 
-            {/* --- STUDENT: FINANCES --- */}
+            {/* --- STUDENT: FINANCES (UP INVOICE: STUDENT ACCOUNT) --- */}
             {!isTeacher && activeDepartment === "finance" && (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-1">
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Fees</p>
-                    <p className="text-2xl font-black text-slate-900">R 5,000.00</p>
-                    <p className="text-[11px] text-slate-400">Academic session</p>
+              <div className="space-y-5 max-w-5xl mx-auto">
+                {/* UP Action Header */}
+                <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-base font-bold text-slate-900">Invoice: Student Account</h2>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                        R 990.00 Due By You
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500">Official statement of account &amp; fee ledger &bull; University of Pretoria model.</p>
                   </div>
-                  <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-1">
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Amount Paid</p>
-                    <p className="text-2xl font-black text-emerald-700">R 2,500.00</p>
-                    <p className="text-[11px] text-emerald-600 font-medium">Verified EFT payment</p>
-                  </div>
-                  <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-1">
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Outstanding Balance</p>
-                    <p className="text-2xl font-black text-[#b82e2e]">R 2,500.00</p>
-                    <p className="text-[11px] text-amber-600 font-semibold">Status: Partially Paid</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      onClick={() => alert("Connecting to Paystack for R 990.00...")}
+                      className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm"
+                    >
+                      <span>Pay R 990.00 via Paystack</span>
+                    </button>
+                    <button
+                      onClick={() => printDocument(getStudentInvoiceHtml())}
+                      className="px-4 py-2 bg-[#b82e2e] hover:bg-[#a02626] text-white text-xs font-bold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm"
+                    >
+                      <span>Print / Download PDF</span>
+                    </button>
+                    <button
+                      onClick={() => setShowStudentInvoiceModal(true)}
+                      className="px-3 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                    >
+                      Fullscreen View
+                    </button>
                   </div>
                 </div>
 
-                <div className="border border-slate-200 rounded-xl p-6 bg-white space-y-4">
-                  <h3 className="text-sm font-bold text-slate-900">Pay Tuition (Paystack / EFT)</h3>
-                  <p className="text-xs text-slate-500">Pay your outstanding balance securely online or download your official statement.</p>
-                  <div className="flex flex-wrap gap-3">
-                    <button
-                      onClick={() => alert("Paystack checkout gateway connecting...")}
-                      className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg"
-                    >
-                      Pay R 2,500 via Paystack
-                    </button>
-                    <button
-                      onClick={() => alert("Fee statement generated.")}
-                      className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-800 text-xs font-bold rounded-lg"
-                    >
-                      Download Fee Statement (PDF)
-                    </button>
-                  </div>
+                {/* The Embedded Sheet matching UP Invoice Layout Exactly */}
+                <div className="bg-white border border-slate-300 rounded-xl p-4 sm:p-8 shadow-md overflow-x-auto">
+                  <div
+                    className="min-w-[700px]"
+                    dangerouslySetInnerHTML={{ __html: getStudentInvoiceHtml() }}
+                  />
                 </div>
               </div>
             )}
-
-            {/* --- STUDENT: MY MODULES & MOODLE CLASSROOM --- */}
+{/* --- STUDENT: MY MODULES & MOODLE CLASSROOM --- */}
             {!isTeacher && activeDepartment === "modules" && (
               <div className="space-y-6">
                 <div>
@@ -2026,6 +2090,38 @@ export default function Dashboard() {
                 setShowPasswordChangeModal(false);
                 alert("Password updated successfully!");
               }}
+            />
+          </div>
+        </div>
+      )}
+      {/* Student Official Invoice & Statement Modal */}
+      {showStudentInvoiceModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
+          <div className="relative w-full max-w-4xl bg-white border border-slate-200 rounded-xl p-6 shadow-2xl my-8">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
+              <div className="flex items-center gap-3">
+                <Image src="/assets/logo.png" alt="StudyHub" width={110} height={35} className="object-contain" />
+                <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Official Statement of Account</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => printDocument(getStudentInvoiceHtml())}
+                  className="px-3 py-1.5 bg-[#b82e2e] hover:bg-[#a02626] text-white text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                >
+                  Print / Save PDF
+                </button>
+                <button
+                  onClick={() => setShowStudentInvoiceModal(false)}
+                  className="px-3 py-1.5 border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-lg cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+
+            <div
+              className="border border-slate-200 rounded-lg p-4 bg-white overflow-auto max-h-[75vh]"
+              dangerouslySetInnerHTML={{ __html: getStudentInvoiceHtml() }}
             />
           </div>
         </div>
