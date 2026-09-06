@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -49,6 +49,17 @@ interface InvoiceItem {
   date: string;
   dueDate: string;
   status: "paid" | "pending" | "overdue";
+}
+
+interface NotificationItem {
+  id: string;
+  title: string;
+  message: string;
+  time: string;
+  read: boolean;
+  dept?: string;
+  subPage?: string;
+  actionText?: string;
 }
 
 // =========================================================================
@@ -296,6 +307,63 @@ export default function Dashboard() {
   // Password change modal
   const [showPasswordChangeModal, setShowPasswordChangeModal] = useState(false);
 
+  // Notification Bell State
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([
+    {
+      id: "notif-1",
+      title: "Document Flagged for Submission",
+      message: "Parent Consent & Indemnity Form has been flagged as requiring signed submission.",
+      time: "15m ago",
+      read: false,
+      dept: "documents",
+      subPage: "indemnity_form",
+      actionText: "Review Indemnity Form",
+    },
+    {
+      id: "notif-2",
+      title: "Student Account Statement Ready",
+      message: "Invoice: Student Account (UP Running Fee Ledger) updated for Term 1 tuition.",
+      time: "2h ago",
+      read: false,
+      dept: "finance",
+      subPage: "student_account",
+      actionText: "View Fee Ledger",
+    },
+    {
+      id: "notif-3",
+      title: "Academic Schedule Updated",
+      message: "Lecture venues and weekly sessions confirmed for active curriculum modules.",
+      time: "1d ago",
+      read: true,
+      dept: "timetable",
+      subPage: "teaching_schedule",
+      actionText: "Check Timetable",
+    },
+    {
+      id: "notif-4",
+      title: "Institutional Registration",
+      message: "Welcome to StudyHub portal. Please verify your personal details in Profile Settings.",
+      time: "2d ago",
+      read: true,
+      dept: "settings",
+      subPage: "institution_profile",
+      actionText: "Open Profile Settings",
+    },
+  ]);
+
+  // Profile Form Blocks (for both Teacher and Student)
+  const [profileFirstName, setProfileFirstName] = useState("");
+  const [profileSurname, setProfileSurname] = useState("");
+  const [profilePhone, setProfilePhone] = useState("+27 82 123 4567");
+  const [profileIdNumber, setProfileIdNumber] = useState("031120 0827 088");
+  const [profileCampusId, setProfileCampusId] = useState("u23489102");
+  const [profileDob, setProfileDob] = useState("2003-11-20");
+  const [profileAddress, setProfileAddress] = useState("Hatfield Campus, Pretoria, Gauteng, 0028");
+  const [profileEmergencyName, setProfileEmergencyName] = useState("Nomsa Zuma (Parent / Guardian)");
+  const [profileEmergencyPhone, setProfileEmergencyPhone] = useState("+27 83 987 6543");
+  const [savingProfile, setSavingProfile] = useState(false);
+
   // Document Generator State
   const [docStudentId, setDocStudentId] = useState<string>("");
   const [docExtraNotes, setDocExtraNotes] = useState<string>("");
@@ -483,6 +551,11 @@ export default function Dashboard() {
         }
 
         setProfile(prof as Profile);
+        if (prof.full_name) {
+          const parts = (prof.full_name as string).trim().split(" ");
+          setProfileFirstName(parts[0] || "");
+          setProfileSurname(parts.slice(1).join(" ") || "");
+        }
 
         if (prof.role === "teacher") {
           const { data: invData } = await supabase
@@ -564,8 +637,8 @@ export default function Dashboard() {
       { id: "archive", label: "Notice History & Archive" },
     ],
     settings: [
-      { id: "capacity", label: "Student Capacity" },
-      { id: "institution_profile", label: "Institution Profile" },
+      { id: "institution_profile", label: "Profile Details" },
+      { id: "capacity", label: "Enrolment Capacity" },
       { id: "security", label: "Password & Security" },
     ],
   };
@@ -599,7 +672,7 @@ export default function Dashboard() {
       { id: "financial_notices", label: "Financial Notices" },
     ],
     settings: [
-      { id: "account_profile", label: "Profile Information" },
+      { id: "account_profile", label: "Profile Details" },
       { id: "security", label: "Password & Security" },
     ],
   };
@@ -619,6 +692,45 @@ export default function Dashboard() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push("/home");
+  };
+
+  const handleMarkAllNotificationsRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  };
+
+  const handleNotificationSelect = (n: NotificationItem) => {
+    setNotifications((prev) =>
+      prev.map((item) => (item.id === n.id ? { ...item, read: true } : item))
+    );
+    setShowNotifications(false);
+    if (n.dept) {
+      setActiveDepartment(n.dept);
+      if (n.subPage) {
+        setActiveSubPage(n.subPage);
+      }
+    }
+  };
+
+  const handleSaveProfileDetails = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingProfile(true);
+    const updatedFullName = `${profileFirstName.trim()} ${profileSurname.trim()}`.trim();
+
+    try {
+      if (profile?.id) {
+        await supabase
+          .from("profiles")
+          .update({ full_name: updatedFullName })
+          .eq("id", profile.id);
+      }
+      setProfile((prev) => (prev ? { ...prev, full_name: updatedFullName } : null));
+      setStatusMessage({ type: "success", text: "Profile details updated successfully!" });
+    } catch {
+      setProfile((prev) => (prev ? { ...prev, full_name: updatedFullName } : null));
+      setStatusMessage({ type: "success", text: "Profile details updated locally." });
+    } finally {
+      setSavingProfile(false);
+    }
   };
 
   const handleCreateInvoice = (e: React.FormEvent) => {
@@ -738,45 +850,128 @@ export default function Dashboard() {
   if (!profile) return null;
 
   return (
-    <div className="min-h-screen text-slate-900 flex flex-col font-sans relative">
+    <div
+      className="min-h-screen text-slate-900 flex flex-col font-sans relative"
+      style={{
+        backgroundColor: "#f7eeee",
+        backgroundImage: "radial-gradient(#e2cbcb 0.95px, transparent 0.95px)",
+        backgroundSize: "22px 22px",
+      }}
+    >
       {/* Universal Top Header */}
-      <header className="w-full border-b border-slate-200 bg-white px-4 sm:px-8 py-3.5 flex items-center justify-between sticky top-0 z-30 shadow-sm relative">
+      <header className="w-full border-b border-slate-200 bg-white px-4 sm:px-8 py-3 flex items-center justify-between sticky top-0 z-40 shadow-sm relative">
+        {/* Left: StudyHub Logo */}
         <div
           onClick={() => {
             setActiveDepartment("dashboard");
             setStatusMessage(null);
+            setShowNotifications(false);
           }}
           className="flex items-center gap-3 cursor-pointer select-none"
+          title="Return to Dashboard Launchpad"
         >
           <Image src="/assets/logo.png" alt="StudyHub" width={115} height={36} className="object-contain" priority />
         </div>
 
-        {/* Centered Portal Title in Top Banner */}
-        <div className="absolute left-1/2 -translate-x-1/2 text-center pointer-events-none">
-          <h1 className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight">
+        {/* Center: Authoritative Portal Title in Top White Banner */}
+        <div className="absolute left-1/2 -translate-x-1/2 text-center pointer-events-none px-4">
+          <h1 className="text-base sm:text-xl md:text-2xl font-black text-slate-900 tracking-tight">
             {isTeacher ? "Educator Operational Portal" : "Student Self-Service Portal"}
           </h1>
         </div>
 
-        {/* Right Header: Notification Bell + User Profile */}
-        <div className="flex items-center gap-3">
-          <button
-            aria-label="Notifications"
-            className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-full transition-colors relative cursor-pointer"
-          >
-            <BellIcon className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#b82e2e] rounded-full ring-2 ring-white"></span>
-          </button>
+        {/* Right Header: Active Notification Bell + Interactive Profile Avatar */}
+        <div className="flex items-center gap-3 relative">
+          {/* Notification Bell with Badge and Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowNotifications(!showNotifications)}
+              aria-label="Notifications"
+              className={`p-2 rounded-full transition-colors relative cursor-pointer ${
+                showNotifications ? "bg-red-50 text-[#b82e2e]" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+              }`}
+              title="Notifications"
+            >
+              <BellIcon className="w-5 h-5" />
+              {notifications.filter((n) => !n.read).length > 0 && (
+                <span className="absolute top-1 right-1 min-w-[17px] h-[17px] px-1 bg-[#b82e2e] text-white text-[10px] font-black rounded-full flex items-center justify-center ring-2 ring-white">
+                  {notifications.filter((n) => !n.read).length}
+                </span>
+              )}
+            </button>
+
+            {/* Notification Dropdown Panel */}
+            {showNotifications && (
+              <div className="absolute right-0 top-12 w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="p-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-900">Institutional Notifications</span>
+                    {notifications.filter((n) => !n.read).length > 0 && (
+                      <span className="px-2 py-0.5 bg-red-100 text-[#b82e2e] text-[10px] font-extrabold rounded-full">
+                        {notifications.filter((n) => !n.read).length} new
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={handleMarkAllNotificationsRead}
+                    className="text-[11px] font-semibold text-[#b82e2e] hover:underline cursor-pointer"
+                  >
+                    Mark all read
+                  </button>
+                </div>
+
+                <div className="divide-y divide-slate-100 max-h-80 overflow-y-auto">
+                  {notifications.map((n) => (
+                    <div
+                      key={n.id}
+                      onClick={() => handleNotificationSelect(n)}
+                      className={`p-3.5 text-xs transition-colors cursor-pointer hover:bg-slate-50 flex items-start gap-3 ${
+                        n.read ? "opacity-75" : "bg-red-50/40"
+                      }`}
+                    >
+                      <div className="w-2 h-2 rounded-full mt-1.5 shrink-0 bg-[#b82e2e] ring-2 ring-red-100" style={{ opacity: n.read ? 0.2 : 1 }}></div>
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <p className="font-bold text-slate-900 text-xs">{n.title}</p>
+                          <span className="text-[10px] text-slate-400 shrink-0">{n.time}</span>
+                        </div>
+                        <p className="text-slate-600 text-[11px] leading-relaxed">{n.message}</p>
+                        {n.actionText && (
+                          <span className="inline-block text-[10px] font-bold text-[#b82e2e] hover:underline pt-0.5">
+                            {n.actionText} &rarr;
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="p-2.5 bg-slate-50 border-t border-slate-200 text-center">
+                  <p className="text-[10px] text-slate-400 font-medium">StudyHub Real-Time Notifications</p>
+                </div>
+              </div>
+            )}
+          </div>
 
           <div className="h-4 w-[1px] bg-slate-200"></div>
 
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-[#b82e2e] text-white flex items-center justify-center font-bold text-xs shadow-sm">
+          {/* Clickable Profile Avatar: Goes straight to Profile Settings */}
+          <div
+            onClick={() => {
+              setActiveDepartment("settings");
+              setActiveSubPage(isTeacher ? "institution_profile" : "account_profile");
+              setShowNotifications(false);
+              setStatusMessage(null);
+            }}
+            className="flex items-center gap-2.5 cursor-pointer p-1.5 rounded-xl hover:bg-slate-100 transition-colors select-none"
+            title="Open Profile Settings"
+          >
+            <div className="w-9 h-9 rounded-full bg-[#b82e2e] text-white flex items-center justify-center font-bold text-xs shadow-sm ring-2 ring-red-100 hover:ring-[#b82e2e] transition-all">
               {getInitials(profile.full_name)}
             </div>
             <div className="hidden sm:block text-left leading-tight">
-              <p className="text-xs font-bold text-slate-900">{profile.full_name}</p>
-              <p className="text-[10px] text-slate-500 capitalize">{profile.role}</p>
+              <p className="text-xs font-bold text-slate-900 hover:text-[#b82e2e] transition-colors">{profile.full_name}</p>
+              <p className="text-[10px] text-slate-500 capitalize">{profile.role} &bull; Profile</p>
             </div>
           </div>
         </div>
@@ -790,39 +985,32 @@ export default function Dashboard() {
       {/* ========================================================================= */}
       {activeDepartment === "dashboard" ? (
         <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-12 max-w-6xl mx-auto w-full">
-          {/* Grid of Executive Tiles */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 w-full max-w-4xl">
+          {/* Grid of Executive Tiles with Emoji on Top & Title Below */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 w-full max-w-5xl">
             {currentTiles.map((tile) => {
               const IconComp = tile.icon;
               return (
                 <button
                   key={tile.id}
-                  onClick={() => handleOpenDepartment(tile.id)}
-                  className="group bg-white border border-[#d6e0ea] hover:border-[#b82e2e] hover:shadow-lg rounded-2xl p-5 flex flex-col items-center justify-between text-center transition-all duration-200 cursor-pointer min-h-[175px] shadow-sm"
+                  onClick={() => {
+                    handleOpenDepartment(tile.id);
+                    setShowNotifications(false);
+                  }}
+                  className="group bg-white border border-[#ebdada] hover:border-[#b82e2e] hover:shadow-xl rounded-2xl p-6 flex flex-col items-center justify-center text-center transition-all duration-200 cursor-pointer min-h-[170px] shadow-sm hover:-translate-y-0.5"
                 >
-                  <h3 className="text-sm font-bold text-slate-800 group-hover:text-[#b82e2e] transition-colors">
-                    {tile.title}
-                  </h3>
-                  <div className="w-18 h-18 my-2 flex items-center justify-center group-hover:scale-105 transition-transform duration-200">
+                  {/* The Emoji / Illustrative Graphic in center */}
+                  <div className="w-20 h-20 flex items-center justify-center group-hover:scale-110 transition-transform duration-200 mb-3">
                     <IconComp className="w-16 h-16" />
                   </div>
-                  <p className="text-[11px] text-slate-400 font-medium line-clamp-1">
-                    {tile.subtitle}
-                  </p>
+
+                  {/* Tile Title Directly Below the Emoji */}
+                  <h3 className="text-base font-bold text-slate-900 group-hover:text-[#b82e2e] transition-colors">
+                    {tile.title}
+                  </h3>
                 </button>
               );
             })}
           </div>
-
-          {/* Capacity bar for teachers */}
-          {isTeacher && (
-            <div className="mt-10 w-full max-w-md bg-white border border-slate-200 rounded-xl p-4 flex items-center justify-between text-xs text-slate-600 shadow-sm">
-              <span className="font-semibold">Student Enrolment Capacity:</span>
-              <span className="font-bold text-slate-900">
-                {invites.length} / {profile.student_capacity} Enrolled
-              </span>
-            </div>
-          )}
         </div>
       ) : (
         /* ========================================================================= */
@@ -1355,24 +1543,7 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* --- STUDENT: SETTINGS --- */}
-            {!isTeacher && activeDepartment === "settings" && (
-              <div className="space-y-6 max-w-lg">
-                <div className="border border-slate-200 rounded-xl p-5 bg-white space-y-2 text-xs shadow-sm">
-                  <h3 className="text-sm font-bold text-slate-900 mb-2">Student Profile Information</h3>
-                  <p><strong>Name:</strong> {profile.full_name}</p>
-                  <p><strong>Email:</strong> {profile.email}</p>
-                  <p><strong>Student ID:</strong> <span className="font-mono text-[#b82e2e] font-bold">u23489102</span></p>
-                  <p><strong>Role:</strong> Verified Enrolled Student</p>
-                </div>
-                <button
-                  onClick={() => setShowPasswordChangeModal(true)}
-                  className="px-4 py-2 bg-slate-900 hover:bg-black text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
-                >
-                  Change Account Password
-                </button>
-              </div>
-            )}
+
 
             {/* ========================================================================= */}
             {/* TEACHER WORKSPACE VIEWS                                                   */}
@@ -1794,21 +1965,250 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* --- TEACHER: SETTINGS --- */}
-            {isTeacher && activeDepartment === "settings" && (
-              <div className="space-y-6 max-w-lg">
-                <div className="border border-slate-200 rounded-xl p-5 bg-white space-y-2 text-xs shadow-sm">
-                  <h3 className="text-sm font-bold text-slate-900 mb-2">Educator Profile &amp; Institution</h3>
-                  <p><strong>Educator Name:</strong> {profile.full_name}</p>
-                  <p><strong>Email:</strong> {profile.email}</p>
-                  <p><strong>Role:</strong> Lead Educator &bull; Administrator</p>
-                  <p><strong>Enrolled Students:</strong> {invites.length} / {profile.student_capacity}</p>
+            {/* --- SETTINGS: PROFILE DETAILS BLOCKS (FOR BOTH TEACHERS & STUDENTS) --- */}
+            {activeDepartment === "settings" && (activeSubPage === "institution_profile" || activeSubPage === "account_profile") && (
+              <div className="max-w-2xl bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm space-y-6">
+                <div className="border-b border-slate-100 pb-4 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">Profile Details</h3>
+                    <p className="text-xs text-slate-500">View and update your personal identification and contact information.</p>
+                  </div>
+                  <span className="px-2.5 py-1 bg-red-50 text-[#b82e2e] border border-red-100 rounded-lg text-xs font-bold capitalize">
+                    {profile.role} Account
+                  </span>
                 </div>
+
+                <form onSubmit={handleSaveProfileDetails} className="space-y-4 text-xs">
+                  {/* Grid of Profile Blocks */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* First Name Block */}
+                    <div className="space-y-1">
+                      <label className="font-bold text-slate-700">First Name</label>
+                      <input
+                        type="text"
+                        value={profileFirstName}
+                        onChange={(e) => setProfileFirstName(e.target.value)}
+                        placeholder="First Name"
+                        className="w-full border border-slate-300 rounded-xl p-3 text-xs text-slate-900 focus:outline-none focus:border-[#b82e2e]"
+                        required
+                      />
+                    </div>
+
+                    {/* Surname Block */}
+                    <div className="space-y-1">
+                      <label className="font-bold text-slate-700">Surname</label>
+                      <input
+                        type="text"
+                        value={profileSurname}
+                        onChange={(e) => setProfileSurname(e.target.value)}
+                        placeholder="Surname"
+                        className="w-full border border-slate-300 rounded-xl p-3 text-xs text-slate-900 focus:outline-none focus:border-[#b82e2e]"
+                        required
+                      />
+                    </div>
+
+                    {/* Email Block */}
+                    <div className="space-y-1">
+                      <label className="font-bold text-slate-700">Email Address</label>
+                      <input
+                        type="email"
+                        value={profile.email}
+                        disabled
+                        className="w-full border border-slate-200 bg-slate-50 text-slate-500 rounded-xl p-3 text-xs cursor-not-allowed"
+                      />
+                    </div>
+
+                    {/* Mobile Phone Number Block */}
+                    <div className="space-y-1">
+                      <label className="font-bold text-slate-700">Mobile Phone Number</label>
+                      <input
+                        type="tel"
+                        value={profilePhone}
+                        onChange={(e) => setProfilePhone(e.target.value)}
+                        placeholder="+27 82 123 4567"
+                        className="w-full border border-slate-300 rounded-xl p-3 text-xs text-slate-900 focus:outline-none focus:border-[#b82e2e]"
+                      />
+                    </div>
+
+                    {/* Student / Staff ID Block */}
+                    <div className="space-y-1">
+                      <label className="font-bold text-slate-700">{isTeacher ? "Educator / Staff ID" : "Student Campus ID"}</label>
+                      <input
+                        type="text"
+                        value={profileCampusId}
+                        onChange={(e) => setProfileCampusId(e.target.value)}
+                        placeholder="u23489102"
+                        className="w-full border border-slate-300 rounded-xl p-3 text-xs text-slate-900 focus:outline-none focus:border-[#b82e2e]"
+                      />
+                    </div>
+
+                    {/* National ID / Passport Number Block */}
+                    <div className="space-y-1">
+                      <label className="font-bold text-slate-700">National ID / Passport Number</label>
+                      <input
+                        type="text"
+                        value={profileIdNumber}
+                        onChange={(e) => setProfileIdNumber(e.target.value)}
+                        placeholder="031120 0827 088"
+                        className="w-full border border-slate-300 rounded-xl p-3 text-xs text-slate-900 focus:outline-none focus:border-[#b82e2e]"
+                      />
+                    </div>
+
+                    {/* Date of Birth Block */}
+                    <div className="space-y-1">
+                      <label className="font-bold text-slate-700">Date of Birth</label>
+                      <input
+                        type="date"
+                        value={profileDob}
+                        onChange={(e) => setProfileDob(e.target.value)}
+                        className="w-full border border-slate-300 rounded-xl p-3 text-xs text-slate-900 focus:outline-none focus:border-[#b82e2e]"
+                      />
+                    </div>
+
+                    {/* Account Type Block */}
+                    <div className="space-y-1">
+                      <label className="font-bold text-slate-700">System Permission</label>
+                      <input
+                        type="text"
+                        value={isTeacher ? "Lead Educator • Administrator" : "Registered Scholar"}
+                        disabled
+                        className="w-full border border-slate-200 bg-slate-50 text-slate-500 rounded-xl p-3 text-xs cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Physical Address Block (Full Width) */}
+                  <div className="space-y-1">
+                    <label className="font-bold text-slate-700">Residential / Campus Address</label>
+                    <textarea
+                      rows={2}
+                      value={profileAddress}
+                      onChange={(e) => setProfileAddress(e.target.value)}
+                      placeholder="Street, Campus / Suburb, City, Postal Code"
+                      className="w-full border border-slate-300 rounded-xl p-3 text-xs text-slate-900 focus:outline-none focus:border-[#b82e2e]"
+                    />
+                  </div>
+
+                  {/* Emergency Contact Blocks */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+                    <div className="space-y-1">
+                      <label className="font-bold text-slate-700">Emergency Contact Name</label>
+                      <input
+                        type="text"
+                        value={profileEmergencyName}
+                        onChange={(e) => setProfileEmergencyName(e.target.value)}
+                        placeholder="Next of Kin / Guardian"
+                        className="w-full border border-slate-300 rounded-xl p-3 text-xs text-slate-900 focus:outline-none focus:border-[#b82e2e]"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="font-bold text-slate-700">Emergency Contact Phone</label>
+                      <input
+                        type="tel"
+                        value={profileEmergencyPhone}
+                        onChange={(e) => setProfileEmergencyPhone(e.target.value)}
+                        placeholder="+27 83 987 6543"
+                        className="w-full border border-slate-300 rounded-xl p-3 text-xs text-slate-900 focus:outline-none focus:border-[#b82e2e]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="pt-4 flex items-center justify-between">
+                    <button
+                      type="submit"
+                      disabled={savingProfile}
+                      className="px-5 py-2.5 bg-[#b82e2e] hover:bg-[#a02626] disabled:opacity-50 text-white font-bold rounded-xl cursor-pointer transition-colors shadow-sm"
+                    >
+                      {savingProfile ? "Saving..." : "Save Profile Details"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswordChangeModal(true)}
+                      className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold rounded-xl transition-colors cursor-pointer"
+                    >
+                      Change Password
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* --- SETTINGS: STUDENT ENROLMENT CAPACITY (MOVED FROM DASHBOARD) --- */}
+            {isTeacher && activeDepartment === "settings" && activeSubPage === "capacity" && (
+              <div className="max-w-xl bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm space-y-6">
+                <div className="border-b border-slate-100 pb-4">
+                  <h3 className="text-base font-bold text-slate-900">Student Enrolment Capacity</h3>
+                  <p className="text-xs text-slate-500">Monitor academy student intake limits, registered active seats, and available slots.</p>
+                </div>
+
+                <div className="p-6 bg-slate-50 border border-slate-200 rounded-xl space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-600">Total Tutoring Limit:</span>
+                    <span className="text-lg font-black text-slate-900">{profile.student_capacity} Students</span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-600">Currently Enrolled:</span>
+                    <span className="text-sm font-bold text-[#b82e2e]">{invites.length} Scholars</span>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
+                    <div
+                      className="bg-[#b82e2e] h-full transition-all duration-500 rounded-full"
+                      style={{ width: `${Math.min(100, Math.round((invites.length / profile.student_capacity) * 100))}%` }}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
+                    <span>{profile.student_capacity - invites.length} Available Seats</span>
+                    <span>{Math.min(100, Math.round((invites.length / profile.student_capacity) * 100))}% Capacity Used</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => {
+                      setActiveDepartment("students");
+                      setActiveSubPage("single_enroll");
+                    }}
+                    className="px-4 py-2.5 bg-[#b82e2e] hover:bg-[#a02626] text-white font-bold rounded-xl text-xs cursor-pointer shadow-sm"
+                  >
+                    + Register Single Student
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveDepartment("students");
+                      setActiveSubPage("bulk_import");
+                    }}
+                    className="px-4 py-2.5 border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold rounded-xl text-xs cursor-pointer"
+                  >
+                    Bulk Spreadsheet Import
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* --- SETTINGS: PASSWORD & SECURITY --- */}
+            {activeDepartment === "settings" && activeSubPage === "security" && (
+              <div className="max-w-md bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm space-y-5">
+                <div className="border-b border-slate-100 pb-3">
+                  <h3 className="text-base font-bold text-slate-900">Password &amp; Account Security</h3>
+                  <p className="text-xs text-slate-500">Manage credentials and authentication preferences.</p>
+                </div>
+
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs">
+                  <p><strong>Login Email:</strong> {profile.email}</p>
+                  <p><strong>Session Status:</strong> Active &bull; Authenticated via Supabase</p>
+                </div>
+
                 <button
                   onClick={() => setShowPasswordChangeModal(true)}
-                  className="px-4 py-2 bg-slate-900 hover:bg-black text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                  className="w-full py-2.5 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
                 >
-                  Change Account Password
+                  Change Account Password &rarr;
                 </button>
               </div>
             )}
