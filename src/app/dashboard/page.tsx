@@ -50,6 +50,17 @@ interface InvoiceItem {
 }
 
 // Vector Line Icons (Ruby Theme #b82e2e)
+function InvoiceIcon({ className = "w-9 h-9" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="16" y1="13" x2="8" y2="13" />
+      <line x1="16" y1="17" x2="8" y2="17" />
+      <polyline points="10 9 9 9 8 9" />
+    </svg>
+  );
+}
 function FinanceIcon({ className = "w-9 h-9" }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -658,36 +669,92 @@ export default function Dashboard() {
     setGeneratedDocPreview(docHtml);
   };
 
+  // Bulletproof print using hidden iframe to bypass popup blockers
   const printDocument = (contentHtml?: string) => {
     const htmlToPrint = typeof contentHtml === "string" && contentHtml ? contentHtml : generatedDocPreview;
     if (!htmlToPrint) return;
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>StudyHub Official Document</title>
-          <base href="${window.location.origin}/" />
-          <style>
-            body { margin: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
-            @media print {
-              body { margin: 0; padding: 10mm; }
-              @page { margin: 10mm; }
-            }
-          </style>
-        </head>
-        <body>
-          ${htmlToPrint}
-          <script>
-            window.onload = function() {
-              window.print();
-            }
-          </script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
+
+    let iframe = document.getElementById("studyhub-print-frame") as HTMLIFrameElement;
+    if (!iframe) {
+      iframe = document.createElement("iframe");
+      iframe.id = "studyhub-print-frame";
+      iframe.style.position = "fixed";
+      iframe.style.right = "0";
+      iframe.style.bottom = "0";
+      iframe.style.width = "0";
+      iframe.style.height = "0";
+      iframe.style.border = "0";
+      document.body.appendChild(iframe);
+    }
+
+    const frameDoc = iframe.contentWindow?.document || iframe.contentDocument;
+    if (frameDoc) {
+      frameDoc.open();
+      frameDoc.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8" />
+            <title>Invoice: Student Account</title>
+            <base href="${window.location.origin}/" />
+            <style>
+              body { margin: 0; padding: 20px; font-family: Arial, Helvetica, sans-serif; }
+              @media print {
+                body { margin: 0; padding: 10mm; }
+                @page { margin: 10mm; size: A4; }
+              }
+            </style>
+          </head>
+          <body>
+            ${htmlToPrint}
+          </body>
+        </html>
+      `);
+      frameDoc.close();
+      setTimeout(() => {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      }, 250);
+    }
+  };
+
+  // Direct file download to user's Downloads folder
+  const downloadDocument = (contentHtml?: string, fileName = "Invoice_Student_Account.html") => {
+    const htmlToDownload = typeof contentHtml === "string" && contentHtml ? contentHtml : generatedDocPreview;
+    if (!htmlToDownload) return;
+
+    const fullHtml = `<!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>Invoice: Student Account</title>
+        <base href="${window.location.origin}/" />
+        <style>
+          body { margin: 0; padding: 30px; font-family: Arial, Helvetica, sans-serif; background: #f8fafc; }
+          .sheet { max-width: 820px; margin: 0 auto; background: #ffffff; padding: 40px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); border: 1px solid #e2e8f0; border-radius: 8px; }
+          @media print {
+            body { padding: 0; background: #ffffff; }
+            .sheet { box-shadow: none; border: none; padding: 10mm; }
+            @page { size: A4; margin: 10mm; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="sheet">
+          ${htmlToDownload}
+        </div>
+      </body>
+    </html>`;
+
+    const blob = new Blob([fullHtml], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const getStudentInvoiceHtml = () => {
@@ -792,7 +859,8 @@ export default function Dashboard() {
   // --- Tile Definitions for Launchpads ---
   const TEACHER_TILES = [
     { id: "students", title: "Students", icon: StudentsGroupIcon, subtitle: "Roster, enrolments & attendance" },
-    { id: "finance", title: "Finance", icon: FinanceIcon, subtitle: "Invoices, billing & Paystack payments" },
+    { id: "finance", title: "Finance", icon: FinanceIcon, subtitle: "Fee ledger & Paystack collections" },
+    { id: "invoices", title: "Invoices", icon: InvoiceIcon, subtitle: "Issue invoices & billing records" },
     { id: "documents", title: "Documents", icon: DocumentsIcon, subtitle: "Consent forms, letters & templates" },
     { id: "timetable", title: "Timetable", icon: TimetableIcon, subtitle: "Calendar, sessions & live links" },
     { id: "academic-overview", title: "Academic Overview", icon: ModulesIcon, subtitle: "Modules, marks & Moodle" },
@@ -801,7 +869,8 @@ export default function Dashboard() {
   ];
 
   const STUDENT_TILES = [
-    { id: "finance", title: "Finances", icon: FinanceIcon, subtitle: "Fee balance, invoices & statements" },
+    { id: "finance", title: "Finances", icon: FinanceIcon, subtitle: "Fee balance, payments & clearance" },
+    { id: "invoices", title: "Invoices", icon: InvoiceIcon, subtitle: "Invoice: Student Account & statements" },
     { id: "modules", title: "My Modules", icon: ModulesIcon, subtitle: "Enrolled courses & Moodle classroom" },
     { id: "student-life", title: "Student Life", icon: StudentLifeIcon, subtitle: "Student ID, profile & registration" },
     { id: "timetable", title: "Timetable", icon: TimetableIcon, subtitle: "Weekly schedule & live class links" },
@@ -820,11 +889,13 @@ export default function Dashboard() {
       { id: "attendance", label: "Attendance & Status" },
     ],
     finance: [
-      { id: "overview", label: "Finance Overview" },
-      { id: "generate_invoice", label: "Generate Invoice" },
-      { id: "invoices_list", label: "Invoices List" },
+      { id: "overview", label: "Fee Ledger" },
       { id: "payments", label: "Payments (Paystack)" },
       { id: "statements", label: "Statements" },
+    ],
+    invoices: [
+      { id: "invoices_list", label: "All Invoices" },
+      { id: "generate_invoice", label: "Issue New Invoice" },
     ],
     documents: [
       { id: "generate_doc", label: "Generate Document" },
@@ -1481,6 +1552,194 @@ export default function Dashboard() {
             )}
 
             {/* --- TEACHER: FINANCE & INVOICE GENERATOR --- */}
+            {/* --- TEACHER: DEDICATED INVOICES TILE --- */}
+            {isTeacher && activeDepartment === "invoices" && (
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
+                  <div>
+                    <h2 className="text-base font-bold text-slate-900">Student Invoices &amp; Billing</h2>
+                    <p className="text-xs text-slate-500">Issue official invoices, track clearance status, and export UP-style student accounts.</p>
+                  </div>
+                  <button
+                    onClick={() => setActiveSubPage(activeSubPage === "generate_invoice" ? "invoices_list" : "generate_invoice")}
+                    className="px-4 py-2 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                  >
+                    {activeSubPage === "generate_invoice" ? "View Invoices Table" : "+ Issue New Invoice"}
+                  </button>
+                </div>
+
+                {activeSubPage === "generate_invoice" ? (
+                  /* Interactive Invoice Generator */
+                  <div className="max-w-xl space-y-5 bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+                    <div>
+                      <h2 className="text-base font-bold text-slate-900">Generate Student Invoice</h2>
+                      <p className="text-xs text-slate-500">Create a tuition invoice prepared for automated Paystack payment reconciliation.</p>
+                    </div>
+
+                    <form onSubmit={handleCreateInvoice} className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-medium text-slate-700 mb-1">Select Student *</label>
+                        <select
+                          className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-slate-900"
+                          value={invStudentId}
+                          onChange={(e) => setInvStudentId(e.target.value)}
+                          required
+                        >
+                          {invites.map((inv) => (
+                            <option key={inv.id} value={inv.id}>
+                              {inv.student_name} ({inv.invite_code}) &bull; {inv.student_email}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-slate-700 mb-1">Invoice Item Description *</label>
+                        <input
+                          type="text"
+                          className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-slate-900"
+                          placeholder="e.g. Mathematics Grade 12 - Term 1 Tuition"
+                          value={invDescription}
+                          onChange={(e) => setInvDescription(e.target.value)}
+                          required
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium text-slate-700 mb-1">Amount (ZAR) *</label>
+                          <input
+                            type="number"
+                            className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-slate-900"
+                            value={invAmount}
+                            onChange={(e) => setInvAmount(Number(e.target.value))}
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-slate-700 mb-1">Due Date *</label>
+                          <input
+                            type="date"
+                            className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-slate-900"
+                            value={invDueDate}
+                            onChange={(e) => setInvDueDate(e.target.value)}
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="w-full py-2.5 bg-[#b82e2e] hover:bg-[#a02626] text-white font-bold text-xs rounded-lg transition-colors cursor-pointer"
+                      >
+                        Issue Invoice &bull; Notify Student
+                      </button>
+                    </form>
+                  </div>
+                ) : (
+                  /* Invoices Table */
+                  <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm">
+                    <div className="px-5 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+                      <h3 className="text-sm font-bold text-slate-900">All Issued Student Invoices</h3>
+                      <span className="text-xs font-bold text-slate-500">{invoices.length} Total</span>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs text-left">
+                        <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider text-[11px]">
+                          <tr>
+                            <th className="py-2.5 px-4">Invoice #</th>
+                            <th className="py-2.5 px-4">Student</th>
+                            <th className="py-2.5 px-4">Description</th>
+                            <th className="py-2.5 px-4">Due Date</th>
+                            <th className="py-2.5 px-4">Amount</th>
+                            <th className="py-2.5 px-4">Status</th>
+                            <th className="py-2.5 px-4 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {invoices.map((inv) => (
+                            <tr key={inv.id}>
+                              <td className="py-3 px-4 font-mono font-bold text-slate-900">{inv.invoiceNo}</td>
+                              <td className="py-3 px-4 font-medium text-slate-800">{inv.studentName}</td>
+                              <td className="py-3 px-4 text-slate-600">{inv.description}</td>
+                              <td className="py-3 px-4 text-slate-500">{inv.dueDate}</td>
+                              <td className="py-3 px-4 font-bold text-slate-900">R {inv.amount.toLocaleString()}</td>
+                              <td className="py-3 px-4">
+                                <span
+                                  className={`px-2 py-0.5 rounded font-semibold text-[11px] ${
+                                    inv.status === "paid"
+                                      ? "text-emerald-700 bg-emerald-50 border border-emerald-200"
+                                      : "text-amber-700 bg-amber-50 border border-amber-200"
+                                  }`}
+                                >
+                                  {inv.status === "paid" ? "Paid" : "Pending"}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-right">
+                                <div className="inline-flex items-center gap-1.5">
+                                  <button
+                                    onClick={() => {
+                                      const docHtml = generateDocumentHtml(
+                                        "student_invoice",
+                                        {
+                                          name: inv.studentName,
+                                          studentId: "u23489102",
+                                          email: inv.studentEmail,
+                                          monthlyFee: inv.amount,
+                                          totalDebt: 12000,
+                                          paidAmount: inv.status === "paid" ? 12000 : 11010,
+                                        },
+                                        {
+                                          institutionName: "StudyHub Education",
+                                          educatorName: profile?.full_name || "Lead Educator",
+                                          contactEmail: profile?.email || "info@logtraq.co.za",
+                                          website: "studyhub.logtraq.co.za",
+                                        }
+                                      );
+                                      printDocument(docHtml);
+                                    }}
+                                    className="px-2.5 py-1 border border-slate-200 hover:border-slate-400 text-slate-700 text-[11px] font-bold rounded transition-colors cursor-pointer"
+                                  >
+                                    Print
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      const docHtml = generateDocumentHtml(
+                                        "student_invoice",
+                                        {
+                                          name: inv.studentName,
+                                          studentId: "u23489102",
+                                          email: inv.studentEmail,
+                                          monthlyFee: inv.amount,
+                                          totalDebt: 12000,
+                                          paidAmount: inv.status === "paid" ? 12000 : 11010,
+                                        },
+                                        {
+                                          institutionName: "StudyHub Education",
+                                          educatorName: profile?.full_name || "Lead Educator",
+                                          contactEmail: profile?.email || "info@logtraq.co.za",
+                                          website: "studyhub.logtraq.co.za",
+                                        }
+                                      );
+                                      downloadDocument(docHtml, `${inv.invoiceNo}.html`);
+                                    }}
+                                    className="px-2 py-1 border border-slate-200 hover:border-slate-400 text-slate-600 text-[11px] rounded transition-colors cursor-pointer"
+                                    title="Download File"
+                                  >
+                                    &darr;
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             {isTeacher && activeDepartment === "finance" && (
               <div className="space-y-6">
                 {activeSubPage === "generate_invoice" ? (
@@ -1898,8 +2157,69 @@ export default function Dashboard() {
             {/* STUDENT SELF-SERVICE DEPARTMENT VIEWS */}
             {/* ========================================================================= */}
 
-            {/* --- STUDENT: FINANCES (UP INVOICE: STUDENT ACCOUNT) --- */}
+            {/* --- STUDENT: FINANCES OVERVIEW --- */}
             {!isTeacher && activeDepartment === "finance" && (
+              <div className="space-y-6 max-w-4xl">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
+                  <div>
+                    <h2 className="text-base font-bold text-slate-900">Student Fee Account</h2>
+                    <p className="text-xs text-slate-500">Overview of tuition billing, payments credited, and outstanding balances.</p>
+                  </div>
+                  <button
+                    onClick={() => setActiveDepartment("invoices")}
+                    className="px-4 py-2 bg-[#b82e2e] hover:bg-[#a02626] text-white text-xs font-bold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
+                  >
+                    <span>View Official Invoice Tile &rarr;</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-1 shadow-sm">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Fees Billed</p>
+                    <p className="text-2xl font-black text-slate-900">R 12,000.00</p>
+                    <p className="text-[11px] text-slate-400">Academic session 2026</p>
+                  </div>
+                  <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-1 shadow-sm">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Amount Cleared</p>
+                    <p className="text-2xl font-black text-emerald-700">R 11,010.00</p>
+                    <p className="text-[11px] text-emerald-600 font-medium">Verified payments credited</p>
+                  </div>
+                  <div className="bg-white border-2 border-red-200 rounded-xl p-5 space-y-1 bg-red-50/40 shadow-sm">
+                    <p className="text-xs font-semibold text-[#b82e2e] uppercase tracking-wider">Outstanding Debt</p>
+                    <p className="text-2xl font-black text-[#b82e2e]">R 990.00</p>
+                    <p className="text-[11px] text-amber-700 font-bold">Status: Due By You</p>
+                  </div>
+                </div>
+
+                <div className="border border-slate-200 rounded-xl p-6 bg-white space-y-4 shadow-sm">
+                  <h3 className="text-sm font-bold text-slate-900">Tuition Settlement (Paystack / EFT)</h3>
+                  <p className="text-xs text-slate-500">Pay your outstanding tuition balance securely online or download your official statement.</p>
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      onClick={() => alert("Connecting to Paystack Gateway for R 990.00...")}
+                      className="px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                    >
+                      Pay R 990.00 via Paystack
+                    </button>
+                    <button
+                      onClick={() => setActiveDepartment("invoices")}
+                      className="px-4 py-2.5 border border-slate-300 hover:bg-slate-50 text-slate-800 text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                    >
+                      Open Invoice: Student Account
+                    </button>
+                    <button
+                      onClick={() => downloadDocument(getStudentInvoiceHtml(), "StudyHub_Fee_Statement.html")}
+                      className="px-4 py-2.5 border border-slate-300 hover:bg-slate-50 text-slate-800 text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                    >
+                      Download Statement (.html)
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* --- STUDENT: DEDICATED INVOICES TILE (UP INVOICE: STUDENT ACCOUNT) --- */}
+            {!isTeacher && activeDepartment === "invoices" && (
               <div className="space-y-5 max-w-5xl mx-auto">
                 {/* UP Action Header */}
                 <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
@@ -1923,7 +2243,13 @@ export default function Dashboard() {
                       onClick={() => printDocument(getStudentInvoiceHtml())}
                       className="px-4 py-2 bg-[#b82e2e] hover:bg-[#a02626] text-white text-xs font-bold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm"
                     >
-                      <span>Print / Download PDF</span>
+                      <span>Print / Save as PDF</span>
+                    </button>
+                    <button
+                      onClick={() => downloadDocument(getStudentInvoiceHtml(), "Invoice_Student_Account.html")}
+                      className="px-3 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                    >
+                      Download File
                     </button>
                     <button
                       onClick={() => setShowStudentInvoiceModal(true)}
