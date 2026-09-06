@@ -858,9 +858,9 @@ export default function Dashboard() {
         backgroundSize: "22px 22px",
       }}
     >
-      {/* Universal Top Header */}
-      <header className="w-full border-b border-slate-200 bg-white px-4 sm:px-8 py-3 flex items-center justify-between sticky top-0 z-40 shadow-sm relative">
-        {/* Left: StudyHub Logo */}
+      {/* Universal Top Header: Executive Deep Red Banner */}
+      <header className="w-full border-b border-[#781717] bg-[#8e1b1b] px-4 sm:px-8 py-3 flex items-center justify-between sticky top-0 z-40 shadow-md relative text-white">
+        {/* Left: StudyHub Logo + LogTraq Co-Branding */}
         <div
           onClick={() => {
             setActiveDepartment("dashboard");
@@ -870,12 +870,18 @@ export default function Dashboard() {
           className="flex items-center gap-3 cursor-pointer select-none"
           title="Return to Dashboard Launchpad"
         >
-          <Image src="/assets/logo.png" alt="StudyHub" width={115} height={36} className="object-contain" priority />
+          <div className="bg-white px-2.5 py-1 rounded-xl shadow-sm flex items-center">
+            <Image src="/assets/logo.png" alt="StudyHub" width={105} height={32} className="object-contain" priority />
+          </div>
+          <span className="text-white/40 font-light text-lg">/</span>
+          <span className="font-black text-sm sm:text-base tracking-wider uppercase text-white drop-shadow-sm">
+            LogTraq
+          </span>
         </div>
 
-        {/* Center: Authoritative Portal Title in Top White Banner */}
+        {/* Center: Authoritative Portal Title in Top Deep Red Banner */}
         <div className="absolute left-1/2 -translate-x-1/2 text-center pointer-events-none px-4">
-          <h1 className="text-base sm:text-xl md:text-2xl font-black text-slate-900 tracking-tight">
+          <h1 className="text-base sm:text-xl md:text-2xl font-black text-white tracking-tight drop-shadow-sm">
             {isTeacher ? "Educator Operational Portal" : "Student Self-Service Portal"}
           </h1>
         </div>
@@ -888,13 +894,13 @@ export default function Dashboard() {
               onClick={() => setShowNotifications(!showNotifications)}
               aria-label="Notifications"
               className={`p-2 rounded-full transition-colors relative cursor-pointer ${
-                showNotifications ? "bg-red-50 text-[#b82e2e]" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                showNotifications ? "bg-white/20 text-white" : "text-white/90 hover:text-white hover:bg-white/10"
               }`}
               title="Notifications"
             >
-              <BellIcon className="w-5 h-5" />
+              <BellIcon className="w-5 h-5 text-white" />
               {notifications.filter((n) => !n.read).length > 0 && (
-                <span className="absolute top-1 right-1 min-w-[17px] h-[17px] px-1 bg-[#b82e2e] text-white text-[10px] font-black rounded-full flex items-center justify-center ring-2 ring-white">
+                <span className="absolute top-1 right-1 min-w-[17px] h-[17px] px-1 bg-amber-400 text-slate-950 text-[10px] font-black rounded-full flex items-center justify-center ring-2 ring-[#8e1b1b]">
                   {notifications.filter((n) => !n.read).length}
                 </span>
               )}
@@ -902,7 +908,7 @@ export default function Dashboard() {
 
             {/* Notification Dropdown Panel */}
             {showNotifications && (
-              <div className="absolute right-0 top-12 w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="absolute right-0 top-12 w-80 sm:w-96 bg-white text-slate-900 border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
                 <div className="p-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-slate-900">Institutional Notifications</span>
@@ -953,7 +959,7 @@ export default function Dashboard() {
             )}
           </div>
 
-          <div className="h-4 w-[1px] bg-slate-200"></div>
+          <div className="h-4 w-[1px] bg-white/30"></div>
 
           {/* Clickable Profile Avatar: Goes straight to Profile Settings */}
           <div
@@ -963,15 +969,15 @@ export default function Dashboard() {
               setShowNotifications(false);
               setStatusMessage(null);
             }}
-            className="flex items-center gap-2.5 cursor-pointer p-1.5 rounded-xl hover:bg-slate-100 transition-colors select-none"
+            className="flex items-center gap-2.5 cursor-pointer p-1.5 rounded-xl hover:bg-white/10 transition-colors select-none"
             title="Open Profile Settings"
           >
-            <div className="w-9 h-9 rounded-full bg-[#b82e2e] text-white flex items-center justify-center font-bold text-xs shadow-sm ring-2 ring-red-100 hover:ring-[#b82e2e] transition-all">
+            <div className="w-9 h-9 rounded-full bg-white text-[#8e1b1b] flex items-center justify-center font-black text-xs shadow-md ring-2 ring-white/40">
               {getInitials(profile.full_name)}
             </div>
             <div className="hidden sm:block text-left leading-tight">
-              <p className="text-xs font-bold text-slate-900 hover:text-[#b82e2e] transition-colors">{profile.full_name}</p>
-              <p className="text-[10px] text-slate-500 capitalize">{profile.role} &bull; Profile</p>
+              <p className="text-xs font-bold text-white">{profile.full_name}</p>
+              <p className="text-[10px] text-white/80 capitalize">{profile.role} &bull; Profile</p>
             </div>
           </div>
         </div>
