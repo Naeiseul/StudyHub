@@ -415,7 +415,7 @@ export default function Dashboard() {
   ];
 
   const STUDENT_TILES = [
-    { id: "finance", title: "Finances", icon: FinanceIcon, subtitle: "Student Account, invoices & fee ledger" },
+    { id: "finance", title: "Finances", icon: FinanceIcon, subtitle: "Student Account, payments & fee ledger" },
     { id: "modules", title: "My Modules", icon: ModulesIcon, subtitle: "Course syllabus & Moodle classroom" },
     { id: "student-life", title: "Student Life", icon: StudentLifeIcon, subtitle: "Digital student ID & conduct pledge" },
     { id: "timetable", title: "Timetable", icon: TimetableIcon, subtitle: "Lecture schedules & exam venues" },
