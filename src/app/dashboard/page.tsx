@@ -571,13 +571,13 @@ export default function Dashboard() {
       return;
     }
     const res = parseSpreadsheetText(text);
-    setParsedRows(res.rows);
+    setParsedRows(res);
   };
 
   const handleFileUpload = async (file: File) => {
     try {
       const res = await parseExcelFile(file);
-      setParsedRows(res.rows);
+      setParsedRows(res);
     } catch (err) {
       console.error(err);
     }
@@ -590,8 +590,8 @@ export default function Dashboard() {
     setImportingBulk(true);
     const newInvites: StudentInvite[] = validRows.map((r, idx) => ({
       id: `bulk-${Date.now()}-${idx}`,
-      student_name: r.student_name,
-      student_email: r.student_email,
+      student_name: r.name,
+      student_email: r.email,
       invite_code: `STU-${Math.floor(100000 + Math.random() * 900000)}`,
       temp_password: `Pass${Math.floor(1000 + Math.random() * 9000)}!`,
       status: "pending",
