@@ -1028,20 +1028,20 @@ export default function Dashboard() {
         /* The sidebar shows ONLY sub-options of this department (NOT the whole board)*/
         /* ========================================================================= */
         <div className="flex-1 flex w-full">
-          {/* Department-Specific Left Sidebar */}
-          <aside className="w-64 border-r border-slate-200 bg-white flex flex-col justify-between p-4 shrink-0 min-h-[calc(100vh-57px)]">
+          {/* Department-Specific Left Sidebar: Navy Blue Theme */}
+          <aside className="w-64 border-r border-[#07131e] bg-[#0b1a28] flex flex-col justify-between p-4 shrink-0 min-h-[calc(100vh-57px)] text-white shadow-sm">
             <div className="space-y-4">
               {/* Return to Launchpad button */}
               <button
                 onClick={() => setActiveDepartment("dashboard")}
-                className="flex items-center gap-2 px-3 py-2 w-full text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer border border-slate-200"
+                className="flex items-center gap-2 px-3 py-2 w-full text-xs font-bold text-slate-200 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-colors cursor-pointer border border-white/10"
               >
                 <span>&larr;</span>
                 <span>Dashboard Launchpad</span>
               </button>
 
-              <div className="border-t border-slate-100 pt-3">
-                <p className="text-[10px] font-black text-[#b82e2e] uppercase tracking-wider px-3 mb-2">
+              <div className="border-t border-white/10 pt-3">
+                <p className="text-[10px] font-black text-red-400 uppercase tracking-wider px-3 mb-2">
                   {activeDepartment.replace("-", " ")}
                 </p>
 
@@ -1058,7 +1058,7 @@ export default function Dashboard() {
                           href="https://moodle.org"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 transition-colors"
+                          className="flex items-center justify-between w-full px-3 py-2 rounded-xl text-xs font-bold text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 transition-colors"
                         >
                           <span>{item.label}</span>
                           <ExternalLinkIcon className="w-3.5 h-3.5" />
@@ -1073,10 +1073,10 @@ export default function Dashboard() {
                           setActiveSubPage(item.id);
                           setStatusMessage(null);
                         }}
-                        className={`flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-xs transition-colors cursor-pointer text-left ${
+                        className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-xs transition-colors cursor-pointer text-left ${
                           isActive
-                            ? "bg-red-50 text-[#b82e2e] font-bold border-l-4 border-[#b82e2e]"
-                            : "text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium"
+                            ? "bg-[#b82e2e] text-white font-bold shadow-sm"
+                            : "text-slate-300 hover:text-white hover:bg-white/5 font-medium"
                         }`}
                       >
                         <span>{item.label}</span>
@@ -1088,17 +1088,17 @@ export default function Dashboard() {
             </div>
 
             {/* Sidebar Footer */}
-            <div className="border-t border-slate-100 pt-3 space-y-1">
+            <div className="border-t border-white/10 pt-3 space-y-1">
               <p className="text-[11px] text-slate-400 px-3 truncate">{profile.email}</p>
               <button
                 onClick={() => setShowPasswordChangeModal(true)}
-                className="text-xs text-slate-600 hover:text-slate-900 px-3 py-1.5 w-full text-left font-medium block cursor-pointer rounded hover:bg-slate-50"
+                className="text-xs text-slate-300 hover:text-white px-3 py-1.5 w-full text-left font-medium block cursor-pointer rounded-lg hover:bg-white/5 transition-colors"
               >
                 Change Password
               </button>
               <button
                 onClick={handleLogout}
-                className="text-xs text-red-600 hover:text-red-800 px-3 py-1.5 w-full text-left font-medium block cursor-pointer rounded hover:bg-red-50"
+                className="text-xs text-red-400 hover:text-red-300 px-3 py-1.5 w-full text-left font-medium block cursor-pointer rounded-lg hover:bg-red-950/40 transition-colors"
               >
                 Log Out
               </button>
