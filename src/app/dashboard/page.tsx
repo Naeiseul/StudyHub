@@ -1028,19 +1028,10 @@ export default function Dashboard() {
         /* The sidebar shows ONLY sub-options of this department (NOT the whole board)*/
         /* ========================================================================= */
         <div className="flex-1 flex w-full">
-          {/* Department-Specific Left Sidebar: Navy Blue Theme */}
-          <aside className="w-64 border-r border-[#07131e] bg-[#0b1a28] flex flex-col justify-between p-4 shrink-0 min-h-[calc(100vh-57px)] text-white shadow-sm">
+          {/* Department-Specific Left Sidebar: Slate Theme */}
+          <aside className="w-64 border-r border-slate-700/60 bg-[#1e293b] flex flex-col justify-between p-4 shrink-0 min-h-[calc(100vh-57px)] text-white shadow-sm">
             <div className="space-y-4">
-              {/* Return to Launchpad button */}
-              <button
-                onClick={() => setActiveDepartment("dashboard")}
-                className="flex items-center gap-2 px-3 py-2 w-full text-xs font-bold text-slate-200 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-colors cursor-pointer border border-white/10"
-              >
-                <span>&larr;</span>
-                <span>Dashboard Launchpad</span>
-              </button>
-
-              <div className="border-t border-white/10 pt-3">
+              <div>
                 <p className="text-[10px] font-black text-red-400 uppercase tracking-wider px-3 mb-2">
                   {activeDepartment.replace("-", " ")}
                 </p>
