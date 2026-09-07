@@ -853,35 +853,39 @@ export default function Dashboard() {
     <div
       className="min-h-screen text-slate-900 flex flex-col font-sans relative"
       style={{
-        backgroundColor: "#f7eeee",
-        backgroundImage: "radial-gradient(#e2cbcb 0.95px, transparent 0.95px)",
+        backgroundColor: "#f1f5f9",
+        backgroundImage: "radial-gradient(#cbd5e1 0.75px, transparent 0.75px)",
         backgroundSize: "22px 22px",
       }}
     >
-      {/* Universal Top Header: Executive Deep Red Banner */}
-      <header className="w-full border-b border-[#781717] bg-[#8e1b1b] px-4 sm:px-8 py-3 flex items-center justify-between sticky top-0 z-40 shadow-md relative text-white">
-        {/* Left: StudyHub Logo + LogTraq Co-Branding */}
+      {/* Universal Top Header: Clean Executive White Banner */}
+      <header className="w-full border-b border-slate-200 bg-white px-4 sm:px-8 py-3 flex items-center justify-between sticky top-0 z-40 shadow-xs relative">
+        {/* Left: Authentic a+ Logo + LogTraq */}
         <div
           onClick={() => {
             setActiveDepartment("dashboard");
             setStatusMessage(null);
             setShowNotifications(false);
           }}
-          className="flex items-center gap-3 cursor-pointer select-none"
+          className="flex items-center gap-2.5 cursor-pointer select-none"
           title="Return to Dashboard Launchpad"
         >
-          <div className="bg-white px-2.5 py-1 rounded-xl shadow-sm flex items-center">
-            <Image src="/assets/logo.png" alt="StudyHub" width={105} height={32} className="object-contain" priority />
-          </div>
-          <span className="text-white/40 font-light text-lg">/</span>
-          <span className="font-black text-sm sm:text-base tracking-wider uppercase text-white drop-shadow-sm">
+          <Image
+            src="/assets/logo-square.png"
+            alt="a+"
+            width={34}
+            height={34}
+            className="object-contain"
+            priority
+          />
+          <span className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900">
             LogTraq
           </span>
         </div>
 
-        {/* Center: Authoritative Portal Title in Top Deep Red Banner */}
+        {/* Center: Authoritative Portal Title in Top Banner */}
         <div className="absolute left-1/2 -translate-x-1/2 text-center pointer-events-none px-4">
-          <h1 className="text-base sm:text-xl md:text-2xl font-black text-white tracking-tight drop-shadow-sm">
+          <h1 className="text-base sm:text-xl font-black text-slate-900 tracking-tight">
             {isTeacher ? "Educator Operational Portal" : "Student Self-Service Portal"}
           </h1>
         </div>
@@ -894,13 +898,13 @@ export default function Dashboard() {
               onClick={() => setShowNotifications(!showNotifications)}
               aria-label="Notifications"
               className={`p-2 rounded-full transition-colors relative cursor-pointer ${
-                showNotifications ? "bg-white/20 text-white" : "text-white/90 hover:text-white hover:bg-white/10"
+                showNotifications ? "bg-red-50 text-[#b82e2e]" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
               }`}
               title="Notifications"
             >
-              <BellIcon className="w-5 h-5 text-white" />
+              <BellIcon className="w-5 h-5" />
               {notifications.filter((n) => !n.read).length > 0 && (
-                <span className="absolute top-1 right-1 min-w-[17px] h-[17px] px-1 bg-amber-400 text-slate-950 text-[10px] font-black rounded-full flex items-center justify-center ring-2 ring-[#8e1b1b]">
+                <span className="absolute top-1 right-1 min-w-[17px] h-[17px] px-1 bg-[#b82e2e] text-white text-[10px] font-black rounded-full flex items-center justify-center ring-2 ring-white">
                   {notifications.filter((n) => !n.read).length}
                 </span>
               )}
@@ -959,7 +963,7 @@ export default function Dashboard() {
             )}
           </div>
 
-          <div className="h-4 w-[1px] bg-white/30"></div>
+          <div className="h-4 w-[1px] bg-slate-200"></div>
 
           {/* Clickable Profile Avatar: Goes straight to Profile Settings */}
           <div
@@ -969,15 +973,15 @@ export default function Dashboard() {
               setShowNotifications(false);
               setStatusMessage(null);
             }}
-            className="flex items-center gap-2.5 cursor-pointer p-1.5 rounded-xl hover:bg-white/10 transition-colors select-none"
+            className="flex items-center gap-2.5 cursor-pointer p-1.5 rounded-xl hover:bg-slate-100 transition-colors select-none"
             title="Open Profile Settings"
           >
-            <div className="w-9 h-9 rounded-full bg-white text-[#8e1b1b] flex items-center justify-center font-black text-xs shadow-md ring-2 ring-white/40">
+            <div className="w-9 h-9 rounded-full bg-[#b82e2e] text-white flex items-center justify-center font-bold text-xs shadow-sm ring-2 ring-red-100 hover:ring-[#b82e2e] transition-all">
               {getInitials(profile.full_name)}
             </div>
             <div className="hidden sm:block text-left leading-tight">
-              <p className="text-xs font-bold text-white">{profile.full_name}</p>
-              <p className="text-[10px] text-white/80 capitalize">{profile.role} &bull; Profile</p>
+              <p className="text-xs font-bold text-slate-900 hover:text-[#b82e2e] transition-colors">{profile.full_name}</p>
+              <p className="text-[10px] text-slate-500 capitalize">{profile.role} &bull; Profile</p>
             </div>
           </div>
         </div>
@@ -1002,7 +1006,7 @@ export default function Dashboard() {
                     handleOpenDepartment(tile.id);
                     setShowNotifications(false);
                   }}
-                  className="group bg-white border border-[#ebdada] hover:border-[#b82e2e] hover:shadow-xl rounded-2xl p-6 flex flex-col items-center justify-center text-center transition-all duration-200 cursor-pointer min-h-[170px] shadow-sm hover:-translate-y-0.5"
+                  className="group bg-white border border-[#d6e0ea] hover:border-[#b82e2e] hover:shadow-xl rounded-2xl p-6 flex flex-col items-center justify-center text-center transition-all duration-200 cursor-pointer min-h-[170px] shadow-sm hover:-translate-y-0.5"
                 >
                   {/* The Emoji / Illustrative Graphic in center */}
                   <div className="w-20 h-20 flex items-center justify-center group-hover:scale-110 transition-transform duration-200 mb-3">
