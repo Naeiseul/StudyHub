@@ -781,33 +781,6 @@ export default function Home() {
                 </form>
               )}
             </div>
-
-            {/* Client Showcase Sandbox Card */}
-            <div className="w-full bg-slate-900/80 border border-white/10 rounded-xl p-4 text-center backdrop-blur-md space-y-2.5 shadow-xl">
-              <div className="flex items-center justify-center gap-2 text-[11px] font-bold text-slate-300 uppercase tracking-wider">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span>Client Showcase &bull; Sandbox Mode</span>
-              </div>
-              <p className="text-[11px] text-slate-400 leading-relaxed">
-                Give your clients safe instant access to explore the academy without your personal credentials. Real records remain protected in read-only sandbox mode.
-              </p>
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={() => launchDemo("teacher")}
-                  className="py-2 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-white font-bold text-[11px] transition-colors cursor-pointer"
-                >
-                  Teacher Portal Demo &rarr;
-                </button>
-                <button
-                  type="button"
-                  onClick={() => launchDemo("student")}
-                  className="py-2 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-white font-bold text-[11px] transition-colors cursor-pointer"
-                >
-                  Learner Portal Demo &rarr;
-                </button>
-              </div>
-            </div>
           </div>
         )}
       </div>
