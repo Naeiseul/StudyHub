@@ -681,17 +681,110 @@ export default function Dashboard() {
   const currentMenus = isTeacher ? TEACHER_MENUS : STUDENT_MENUS;
   const activeSubMenuItems = currentMenus[activeDepartment] || [];
 
+  // Centralized navigation handler syncing React state and browser history
+  const navigateTo = useCallback(
+    (deptId: string, subPageId?: string, replaceHistory = false) => {
+      const menus = isTeacher ? TEACHER_MENUS : STUDENT_MENUS;
+      let resolvedSub = subPageId;
+      if (!resolvedSub) {
+        if (deptId === "dashboard") {
+          resolvedSub = "";
+        } else {
+          resolvedSub = menus[deptId]?.[0]?.id || "overview";
+        }
+      }
+
+      setActiveDepartment(deptId);
+      setActiveSubPage(resolvedSub);
+      setStatusMessage(null);
+      setShowNotifications(false);
+
+      if (typeof window !== "undefined") {
+        let targetUrl = "/dashboard";
+        if (deptId !== "dashboard") {
+          const params = new URLSearchParams();
+          params.set("dept", deptId);
+          if (resolvedSub) {
+            params.set("tab", resolvedSub);
+          }
+          targetUrl = `/dashboard?${params.toString()}`;
+        }
+
+        const stateObj = { dept: deptId, subPage: resolvedSub };
+        const currentFull = window.location.pathname + window.location.search;
+
+        if (currentFull !== targetUrl) {
+          if (replaceHistory) {
+            window.history.replaceState(stateObj, "", targetUrl);
+          } else {
+            window.history.pushState(stateObj, "", targetUrl);
+          }
+        }
+      }
+    },
+    [isTeacher, TEACHER_MENUS, STUDENT_MENUS]
+  );
+
+  // Synchronize browser history and handle Chrome Back / Forward navigation
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    // 1. Initial check: parse URL search params (?dept=...&tab=...)
+    const params = new URLSearchParams(window.location.search);
+    const urlDept = params.get("dept");
+    const urlTab = params.get("tab");
+
+    if (urlDept && urlDept !== "dashboard") {
+      setActiveDepartment(urlDept);
+      const menus = isTeacher ? TEACHER_MENUS : STUDENT_MENUS;
+      const availableSubs = menus[urlDept] || [];
+      const defaultSub = availableSubs[0]?.id || "overview";
+      const resolvedSub = urlTab || defaultSub;
+      setActiveSubPage(resolvedSub);
+      window.history.replaceState(
+        { dept: urlDept, subPage: resolvedSub },
+        "",
+        `/dashboard?dept=${encodeURIComponent(urlDept)}&tab=${encodeURIComponent(resolvedSub)}`
+      );
+    } else {
+      setActiveDepartment("dashboard");
+      window.history.replaceState({ dept: "dashboard", subPage: "" }, "", "/dashboard");
+    }
+
+    // 2. Popstate listener for Chrome Back / Forward navigation
+    const handlePopState = (event: PopStateEvent) => {
+      const searchParams = new URLSearchParams(window.location.search);
+      const poppedDept = searchParams.get("dept") || (event.state as any)?.dept || "dashboard";
+      const poppedTab = searchParams.get("tab") || (event.state as any)?.subPage || "";
+
+      setActiveDepartment(poppedDept);
+      if (poppedDept === "dashboard") {
+        setActiveSubPage("");
+      } else {
+        const menus = isTeacher ? TEACHER_MENUS : STUDENT_MENUS;
+        const availableSubs = menus[poppedDept] || [];
+        const defaultSub = availableSubs[0]?.id || "overview";
+        setActiveSubPage(poppedTab || defaultSub);
+      }
+
+      setStatusMessage(null);
+      setShowNotifications(false);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [isTeacher, TEACHER_MENUS, STUDENT_MENUS]);
+
   // When clicking a dashboard tile, enter that department and set its first sub-page
   const handleOpenDepartment = (deptId: string) => {
-    setActiveDepartment(deptId);
-    const firstSub = currentMenus[deptId]?.[0]?.id || "overview";
-    setActiveSubPage(firstSub);
-    setStatusMessage(null);
+    navigateTo(deptId);
   };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    router.push("/home");
+    router.replace("/home");
   };
 
   const handleMarkAllNotificationsRead = () => {
@@ -704,10 +797,7 @@ export default function Dashboard() {
     );
     setShowNotifications(false);
     if (n.dept) {
-      setActiveDepartment(n.dept);
-      if (n.subPage) {
-        setActiveSubPage(n.subPage);
-      }
+      navigateTo(n.dept, n.subPage);
     }
   };
 
@@ -753,7 +843,7 @@ export default function Dashboard() {
     };
 
     setInvoices([newInv, ...invoices]);
-    setActiveSubPage("all_invoices");
+    navigateTo("finance", "all_invoices");
     setStatusMessage({ type: "success", text: `Invoice ${newInv.invoiceNo} issued for ${targetStudent.student_name}` });
   };
 
@@ -778,7 +868,7 @@ export default function Dashboard() {
     setInvites([newStudent, ...invites]);
     setSingleName("");
     setSingleEmail("");
-    setActiveSubPage("roster");
+    navigateTo("students", "roster");
     setStatusMessage({ type: "success", text: `${newStudent.student_name} enrolled with ID ${newStudent.invite_code}` });
   };
 
@@ -820,7 +910,7 @@ export default function Dashboard() {
     setParsedRows([]);
     setSpreadsheetText("");
     setImportingBulk(false);
-    setActiveSubPage("roster");
+    navigateTo("students", "roster");
     setStatusMessage({ type: "success", text: `Successfully registered ${validRows.length} students` });
   };
 
@@ -863,9 +953,7 @@ export default function Dashboard() {
         {/* Left: Authentic a+ Logo + LogTraq */}
         <div
           onClick={() => {
-            setActiveDepartment("dashboard");
-            setStatusMessage(null);
-            setShowNotifications(false);
+            navigateTo("dashboard");
           }}
           className="flex items-center gap-2.5 cursor-pointer select-none"
           title="Return to Dashboard Launchpad"
@@ -968,10 +1056,7 @@ export default function Dashboard() {
           {/* Clickable Profile Avatar: Goes straight to Profile Settings */}
           <div
             onClick={() => {
-              setActiveDepartment("settings");
-              setActiveSubPage(isTeacher ? "institution_profile" : "account_profile");
-              setShowNotifications(false);
-              setStatusMessage(null);
+              navigateTo("settings", isTeacher ? "institution_profile" : "account_profile");
             }}
             className="flex items-center gap-2.5 cursor-pointer p-1.5 rounded-xl hover:bg-slate-100 transition-colors select-none"
             title="Open Profile Settings"
@@ -1061,8 +1146,7 @@ export default function Dashboard() {
                       <button
                         key={item.id}
                         onClick={() => {
-                          setActiveSubPage(item.id);
-                          setStatusMessage(null);
+                          navigateTo(activeDepartment, item.id);
                         }}
                         className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-xs transition-colors cursor-pointer text-left ${
                           isActive
@@ -1102,7 +1186,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between border-b border-slate-200 pb-4">
               <div>
                 <div className="flex items-center gap-2 text-xs text-slate-400 mb-1">
-                  <button onClick={() => setActiveDepartment("dashboard")} className="hover:text-slate-700 underline cursor-pointer">
+                  <button onClick={() => navigateTo("dashboard")} className="hover:text-slate-700 underline cursor-pointer">
                     Dashboard
                   </button>
                   <span>/</span>
@@ -1116,7 +1200,7 @@ export default function Dashboard() {
               </div>
 
               <button
-                onClick={() => setActiveDepartment("dashboard")}
+                onClick={() => navigateTo("dashboard")}
                 className="text-xs text-slate-500 hover:text-slate-900 font-medium cursor-pointer"
               >
                 &times; Close to Launchpad
@@ -1161,7 +1245,7 @@ export default function Dashboard() {
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <button
-                          onClick={() => setActiveSubPage("make_payment")}
+                          onClick={() => navigateTo("finance", "make_payment")}
                           className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm"
                         >
                           <span>Pay R 990.00 via Paystack</span>
@@ -1558,7 +1642,7 @@ export default function Dashboard() {
                     <div className="px-5 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
                       <h3 className="text-sm font-bold text-slate-900">Student Directory ({invites.length})</h3>
                       <button
-                        onClick={() => setActiveSubPage("bulk_import")}
+                        onClick={() => navigateTo("students", "bulk_import")}
                         className="px-3 py-1.5 bg-[#b82e2e] text-white font-bold text-xs rounded-lg cursor-pointer"
                       >
                         + Import Spreadsheet
@@ -1589,8 +1673,7 @@ export default function Dashboard() {
                               <button
                                 onClick={() => {
                                   setDocStudentId(inv.id);
-                                  setActiveDepartment("documents");
-                                  setActiveSubPage("indemnity_form");
+                                  navigateTo("documents", "indemnity_form");
                                 }}
                                 className="px-2 py-1 border border-slate-200 hover:border-slate-400 rounded text-slate-700 font-medium cursor-pointer"
                               >
@@ -1755,7 +1838,7 @@ export default function Dashboard() {
                     <div className="px-5 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
                       <h3 className="text-sm font-bold text-slate-900">All Issued Invoices</h3>
                       <button
-                        onClick={() => setActiveSubPage("issue_invoice")}
+                        onClick={() => navigateTo("finance", "issue_invoice")}
                         className="px-3 py-1.5 bg-[#b82e2e] text-white text-xs font-bold rounded-lg cursor-pointer"
                       >
                         + Issue Invoice
@@ -2172,8 +2255,7 @@ export default function Dashboard() {
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => {
-                      setActiveDepartment("students");
-                      setActiveSubPage("single_enroll");
+                      navigateTo("students", "single_enroll");
                     }}
                     className="px-4 py-2.5 bg-[#b82e2e] hover:bg-[#a02626] text-white font-bold rounded-xl text-xs cursor-pointer shadow-sm"
                   >
@@ -2181,8 +2263,7 @@ export default function Dashboard() {
                   </button>
                   <button
                     onClick={() => {
-                      setActiveDepartment("students");
-                      setActiveSubPage("bulk_import");
+                      navigateTo("students", "bulk_import");
                     }}
                     className="px-4 py-2.5 border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold rounded-xl text-xs cursor-pointer"
                   >

@@ -69,6 +69,7 @@ export default function Home() {
             email: session.user.email,
             role: userRole,
           });
+          router.replace("/dashboard");
         }
       }
     });
@@ -106,6 +107,7 @@ export default function Home() {
             email: session.user.email,
             role: userRole,
           });
+          router.replace("/dashboard");
         }
       } else {
         setSignedInUser(null);
@@ -208,7 +210,7 @@ export default function Home() {
         if (mustChange) {
           setForcePasswordUser({ email: data.user.email || email });
         } else {
-          router.push("/dashboard");
+          router.replace("/dashboard");
         }
       }
     } catch (err: unknown) {
@@ -350,7 +352,7 @@ export default function Home() {
             userEmail={forcePasswordUser.email}
             onSuccess={() => {
               setForcePasswordUser(null);
-              router.push("/dashboard");
+              router.replace("/dashboard");
             }}
             onCancel={handleLogout}
           />
@@ -362,7 +364,7 @@ export default function Home() {
               Role: <strong style={{ textTransform: "capitalize" }}>{signedInUser.role}</strong>
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "6px" }}>
-              <button className="login-btn" onClick={() => router.push("/dashboard")}>
+              <button className="login-btn" onClick={() => router.replace("/dashboard")}>
                 Go to {signedInUser.role === "teacher" ? "Teacher" : "Student"} Portal →
               </button>
               <button className="auth-switch" onClick={handleLogout}>

@@ -9,7 +9,7 @@ export default function Splash() {
   useEffect(() => {
     // Redirect to the main app page after 2 seconds
     const timer = setTimeout(() => {
-      router.push("/home");
+      router.replace("/home");
     }, 2000);
 
     return () => clearTimeout(timer);
