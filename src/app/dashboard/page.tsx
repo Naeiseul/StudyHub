@@ -1,18 +1,16 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { supabase } from "@/lib/supabaseClient";
 import ForcePasswordChange from "@/components/ForcePasswordChange";
 import {
   parseSpreadsheetText,
-  parseExcelFile,
   downloadSampleCsvTemplate,
   ParsedStudentRow,
 } from "@/lib/csvParser";
 import {
-  DOCUMENT_TEMPLATES,
   DocumentType,
   generateDocumentHtml,
   StudentDocData,
@@ -386,7 +384,6 @@ const STUDENT_MENUS: Record<string, { id: string; label: string }[]> = {
 
 export default function Dashboard() {
   const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -395,16 +392,6 @@ export default function Dashboard() {
   // Navigation State
   const [activeDepartment, setActiveDepartment] = useState<string>("dashboard");
   const [activeSubPage, setActiveSubPage] = useState<string>("student_account");
-
-  // Selection state for student roster
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [emailSentMap, setEmailSentMap] = useState<Record<string, boolean>>({});
-
-  // Real-time sending indicators
-  const [sendingId, setSendingId] = useState<string | null>(null);
-  const [bulkSending, setBulkSending] = useState(false);
-  const [bulkProgress, setBulkProgress] = useState<{ current: number; total: number; message: string } | null>(null);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Password change modal
@@ -469,7 +456,7 @@ export default function Dashboard() {
 
   // Document Generator State
   const [docStudentId, setDocStudentId] = useState<string>("");
-  const [docExtraNotes, setDocExtraNotes] = useState<string>("");
+  const [docExtraNotes] = useState<string>("");
 
   // Invoices list state
   const [invoices, setInvoices] = useState<InvoiceItem[]>([
@@ -503,35 +490,9 @@ export default function Dashboard() {
   const [invAmount, setInvAmount] = useState<number>(1500);
   const [invDueDate, setInvDueDate] = useState("2026-10-01");
 
-  // Single student registration form fields
-  const [singleName, setSingleName] = useState("");
-  const [singleEmail, setSingleEmail] = useState("");
-  const [singleStudentNumber, setSingleStudentNumber] = useState("");
-  const [singlePhone, setSinglePhone] = useState("+27 82 000 0000");
-  const [singleDob, setSingleDob] = useState("2007-03-15");
-  const [singleGender, setSingleGender] = useState("Female");
-  const [singleIdNumber, setSingleIdNumber] = useState("0703155123089");
-  const [singleAddress, setSingleAddress] = useState("Hatfield, Pretoria, Gauteng, 0028");
-  const [singleGuardianName, setSingleGuardianName] = useState("");
-  const [singleGuardianRelationship, setSingleGuardianRelationship] = useState("Parent / Guardian");
-  const [singleGuardianPhone, setSingleGuardianPhone] = useState("+27 83 000 0000");
-  const [singleGuardianEmail, setSingleGuardianEmail] = useState("");
-  const [singleSelectedModules, setSingleSelectedModules] = useState<string[]>(["MTH101", "PHY101"]);
-  const [singleError, setSingleError] = useState("");
-
-  // Student Profiles & Enrolments active state
-  const [selectedProfileStudentId, setSelectedProfileStudentId] = useState<string>("stu-001");
-  const [enrolmentSearchQuery, setEnrolmentSearchQuery] = useState("");
-  const [profileSearchQuery, setProfileSearchQuery] = useState("");
-  const [enrolmentFilterTab, setEnrolmentFilterTab] = useState<"all" | "active" | "pending" | "inactive">("all");
-  const [moduleAssignStudentId, setModuleAssignStudentId] = useState<string>("stu-001");
-  const [moduleAssignSelected, setModuleAssignSelected] = useState<string[]>(["MTH101", "PHY101", "CSC101"]);
-  const [newEnrolTab, setNewEnrolTab] = useState<"single" | "bulk">("single");
-
   // Bulk student import
   const [spreadsheetText, setSpreadsheetText] = useState("");
   const [parsedRows, setParsedRows] = useState<ParsedStudentRow[]>([]);
-  const [isDragOver, setIsDragOver] = useState(false);
   const [importingBulk, setImportingBulk] = useState(false);
 
   // Bulletproof print using hidden iframe to bypass popup blockers
@@ -918,15 +879,6 @@ export default function Dashboard() {
     }
     const res = parseSpreadsheetText(text);
     setParsedRows(res);
-  };
-
-  const handleFileUpload = async (file: File) => {
-    try {
-      const res = await parseExcelFile(file);
-      setParsedRows(res);
-    } catch (err) {
-      console.error(err);
-    }
   };
 
   const handleExecuteBulkImport = async () => {
