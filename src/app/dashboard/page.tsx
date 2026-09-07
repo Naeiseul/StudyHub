@@ -314,7 +314,7 @@ const STUDENT_TILES = [
 // Sub-Navigation Menus INSIDE Each Tile
 const TEACHER_MENUS: Record<string, { id: string; label: string }[]> = {
   students: [
-    { id: "enrollments", label: "Student Enrollments" },
+    { id: "enrollments", label: "Enrolled Students" },
   ],
   finance: [
     { id: "ledger_overview", label: "Fee Ledger & Accounts" },
@@ -870,12 +870,12 @@ export default function Dashboard() {
       return;
     }
 
-    const fullName = ${enrollFirstName.trim()} ;
-    const generatedCode = enrollStudentNumber.trim() || STU-;
-    const tempPassword = Pass!;
+    const fullName = `${enrollFirstName.trim()} ${enrollSurname.trim()}`;
+    const generatedCode = enrollStudentNumber.trim() || `STU-${Date.now().toString().slice(-6)}`;
+    const tempPassword = `Pass!${Math.floor(1000 + Math.random() * 9000)}`;
 
     const newStudent: StudentInvite = {
-      id: stu-,
+      id: `stu-${Date.now()}`,
       student_name: fullName,
       student_email: enrollEmail.trim(),
       invite_code: generatedCode,
@@ -907,7 +907,7 @@ export default function Dashboard() {
     setEnrollPhone("");
     setEnrollStudentNumber("");
     setShowEnrollModal(false);
-    setStatusMessage({ type: "success", text: ${fullName} enrolled successfully (Student No: ) });
+    setStatusMessage({ type: "success", text: `${fullName} enrolled successfully (Student No: ${generatedCode})` });
   };
 
   const handleSpreadsheetTextChange = (text: string) => {
@@ -935,11 +935,11 @@ export default function Dashboard() {
 
     setImportingBulk(true);
     const newInvites: StudentInvite[] = validRows.map((r, idx) => ({
-      id: ulk--,
+      id: `bulk-${Date.now()}-${idx}`,
       student_name: r.name,
       student_email: r.email,
-      invite_code: STU-,
-      temp_password: Pass!,
+      invite_code: `STU-${Math.floor(100000 + Math.random() * 900000)}`,
+      temp_password: `Pass!${Math.floor(1000 + Math.random() * 9000)}`,
       status: "pending",
       created_at: new Date().toISOString(),
     }));
@@ -948,7 +948,7 @@ export default function Dashboard() {
     setParsedRows([]);
     setSpreadsheetText("");
     setImportingBulk(false);
-    setStatusMessage({ type: "success", text: Successfully registered  students });
+    setStatusMessage({ type: "success", text: `Successfully registered ${validRows.length} students` });
   };
   const getInitials = (name: string) => {
     return (name || "SH")
