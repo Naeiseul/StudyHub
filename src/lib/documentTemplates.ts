@@ -1,7 +1,6 @@
 /**
- * StudyHub Institutional Document Generation Templates
- * Automates generation of official institutional documents populated with student records.
- * Faithfully mirrors University of Pretoria (UP) Student Account Invoices and institutional letters.
+ * Official LogTraq High School Tutoring Statements & Institutional Documents.
+ * Clean, modern layout matching official high school tuition statements.
  */
 
 export interface StudentDocData {

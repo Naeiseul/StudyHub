@@ -153,6 +153,19 @@ export default function Home() {
     setInviteCode("");
   };
 
+  const launchDemo = (role: "teacher" | "student") => {
+    const demoSession = {
+      role,
+      email: role === "teacher" ? "demo.teacher@studyhub.co.za" : "demo.student@studyhub.co.za",
+      full_name: role === "teacher" ? "Demo Lead Educator" : "Olwethuthando Zuma",
+      isDemo: true,
+    };
+    if (typeof window !== "undefined") {
+      localStorage.setItem("studyhub_demo_session", JSON.stringify(demoSession));
+    }
+    router.replace("/dashboard");
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -165,6 +178,35 @@ export default function Home() {
     const attemptRole = expanded;
     activeLoginRoleRef.current = attemptRole;
     setLoading(true);
+
+    const trimmedEmail = email.trim().toLowerCase();
+    const isTeacherDemo =
+      trimmedEmail === "demo.teacher@studyhub.co.za" ||
+      trimmedEmail === "teacher@studyhub.demo" ||
+      trimmedEmail === "teacher@demo.com" ||
+      (trimmedEmail.includes("demo") && attemptRole === "teacher");
+    const isStudentDemo =
+      trimmedEmail === "demo.student@studyhub.co.za" ||
+      trimmedEmail === "student@studyhub.demo" ||
+      trimmedEmail === "student@demo.com" ||
+      (trimmedEmail.includes("demo") && attemptRole === "student");
+
+    if (isTeacherDemo || isStudentDemo) {
+      const demoRole = isTeacherDemo ? "teacher" : "student";
+      const demoSession = {
+        role: demoRole,
+        email: isTeacherDemo ? "demo.teacher@studyhub.co.za" : "demo.student@studyhub.co.za",
+        full_name: demoRole === "teacher" ? "Demo Lead Educator" : "Olwethuthando Zuma",
+        isDemo: true,
+      };
+      if (typeof window !== "undefined") {
+        localStorage.setItem("studyhub_demo_session", JSON.stringify(demoSession));
+      }
+      activeLoginRoleRef.current = null;
+      setLoading(false);
+      router.replace("/dashboard");
+      return;
+    }
 
     try {
       const { data, error: authErr } = await supabase.auth.signInWithPassword({
@@ -322,6 +364,9 @@ export default function Home() {
   };
 
   const handleLogout = async () => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("studyhub_demo_session");
+    }
     await supabase.auth.signOut();
     setSignedInUser(null);
     setForcePasswordUser(null);
@@ -562,6 +607,21 @@ export default function Home() {
                       ? "Already have an account? Log in"
                       : "Don't have an account? Sign up"}
                   </button>
+
+                  {!isSignup && (
+                    <div className="mt-4 pt-3 border-t border-white/10 text-center">
+                      <button
+                        type="button"
+                        onClick={() => launchDemo("teacher")}
+                        className="w-full py-2.5 px-3 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 rounded-lg text-amber-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <span>⚡ 1-Click Launch Teacher Demo</span>
+                      </button>
+                      <p className="text-[10.5px] text-slate-400 mt-2 font-mono">
+                        Client Login: <span className="text-amber-300">demo.teacher@studyhub.co.za</span> &bull; Pass: <span className="text-amber-300">StudyHub2026</span>
+                      </p>
+                    </div>
+                  )}
                 </form>
               )}
             </div>
@@ -703,8 +763,50 @@ export default function Home() {
                       ? "Already have an account? Log in"
                       : "Don't have an account? Sign up"}
                   </button>
+
+                  {!isSignup && (
+                    <div className="mt-4 pt-3 border-t border-white/10 text-center">
+                      <button
+                        type="button"
+                        onClick={() => launchDemo("student")}
+                        className="w-full py-2.5 px-3 bg-teal-500/15 hover:bg-teal-500/25 border border-teal-500/40 rounded-lg text-teal-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <span>⚡ 1-Click Launch Student Demo</span>
+                      </button>
+                      <p className="text-[10.5px] text-slate-400 mt-2 font-mono">
+                        Client Login: <span className="text-teal-300">demo.student@studyhub.co.za</span> &bull; Pass: <span className="text-teal-300">StudyHub2026</span>
+                      </p>
+                    </div>
+                  )}
                 </form>
               )}
+            </div>
+
+            {/* Client Showcase Sandbox Card */}
+            <div className="w-full bg-slate-900/80 border border-white/10 rounded-xl p-4 text-center backdrop-blur-md space-y-2.5 shadow-xl">
+              <div className="flex items-center justify-center gap-2 text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Client Showcase &bull; Sandbox Mode</span>
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Give your clients safe instant access to explore the academy without your personal credentials. Real records remain protected in read-only sandbox mode.
+              </p>
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => launchDemo("teacher")}
+                  className="py-2 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-white font-bold text-[11px] transition-colors cursor-pointer"
+                >
+                  Teacher Portal Demo &rarr;
+                </button>
+                <button
+                  type="button"
+                  onClick={() => launchDemo("student")}
+                  className="py-2 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-white font-bold text-[11px] transition-colors cursor-pointer"
+                >
+                  Learner Portal Demo &rarr;
+                </button>
+              </div>
             </div>
           </div>
         )}

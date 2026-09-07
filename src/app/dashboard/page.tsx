@@ -301,11 +301,11 @@ const TEACHER_TILES = [
 ];
 
 const STUDENT_TILES = [
-  { id: "finance", title: "Finances", icon: FinanceIllustrativeIcon, subtitle: "Student Account, payments & fee ledger" },
-  { id: "modules", title: "My Modules", icon: ModulesIllustrativeIcon, subtitle: "Course syllabus & Moodle classroom" },
-  { id: "student-life", title: "Student Life", icon: StudentLifeIllustrativeIcon, subtitle: "Digital student ID & conduct pledge" },
-  { id: "timetable", title: "Timetable", icon: TimetableIllustrativeIcon, subtitle: "Lecture schedules & exam venues" },
-  { id: "announcements", title: "Announcements", icon: AnnouncementsIllustrativeIcon, subtitle: "Circulars & administrative dates" },
+  { id: "modules", title: "Learning Hub", icon: ModulesIllustrativeIcon, subtitle: "High school subjects, video lesson & mastery quiz" },
+  { id: "timetable", title: "Live Timetable", icon: TimetableIllustrativeIcon, subtitle: "Upcoming classes & virtual meeting links" },
+  { id: "finance", title: "Tuition & Fees", icon: FinanceIllustrativeIcon, subtitle: "Account statement, receipts & online payment" },
+  { id: "announcements", title: "Announcements", icon: AnnouncementsIllustrativeIcon, subtitle: "Tutor updates, revision schedules & alerts" },
+  { id: "student-life", title: "Learner Card", icon: StudentLifeIllustrativeIcon, subtitle: "Digital student ID & conduct pledge" },
   { id: "settings", title: "Settings", icon: SettingsIllustrativeIcon, subtitle: "Profile & account preferences" },
 ];
 
@@ -346,32 +346,28 @@ const TEACHER_MENUS: Record<string, { id: string; label: string }[]> = {
 };
 
 const STUDENT_MENUS: Record<string, { id: string; label: string }[]> = {
-  finance: [
-    { id: "student_account", label: "Student Account (Invoice)" },
-    { id: "make_payment", label: "Make Payment (Paystack / EFT)" },
-    { id: "payment_history", label: "Payment History & Receipts" },
-    { id: "fee_structure", label: "Fee Structure & Quotation" },
-  ],
   modules: [
-    { id: "registered_modules", label: "Registered Modules" },
-    { id: "moodle_classroom", label: "Open Classroom in Moodle" },
-    { id: "study_materials", label: "Study Materials & Past Papers" },
+    { id: "registered_modules", label: "My Subjects" },
+    { id: "studyhub_demo", label: "Video Lesson & Mastery Quiz" },
+    { id: "study_materials", label: "Past Papers & Exam Packs" },
     { id: "progress_report", label: "Academic Progress Report" },
+  ],
+  timetable: [
+    { id: "weekly_schedule", label: "Live Teaching Schedule" },
+  ],
+  finance: [
+    { id: "student_account", label: "Tuition Statement & Invoice" },
+    { id: "make_payment", label: "Settle Fees (Paystack / EFT)" },
+    { id: "payment_history", label: "Receipts & History" },
+    { id: "fee_structure", label: "Fee Structure" },
+  ],
+  announcements: [
+    { id: "all_notices", label: "Tutor Circulars & Notices" },
   ],
   "student-life": [
     { id: "digital_card", label: "Digital Student ID Card" },
-    { id: "code_of_conduct", label: "Student Code of Conduct" },
-    { id: "campus_services", label: "Campus Services & Support" },
-  ],
-  timetable: [
-    { id: "weekly_schedule", label: "Weekly Lecture Schedule" },
-    { id: "virtual_sessions", label: "Virtual Classroom Links" },
-    { id: "exam_dates", label: "Exam Timetable & Venues" },
-  ],
-  announcements: [
-    { id: "all_notices", label: "All Institutional Notices" },
-    { id: "academic_circulars", label: "Academic Circulars" },
-    { id: "financial_notices", label: "Financial Notices" },
+    { id: "code_of_conduct", label: "Learner Code of Conduct" },
+    { id: "campus_services", label: "Learner Support Desk" },
   ],
   settings: [
     { id: "account_profile", label: "Profile Details" },
@@ -693,6 +689,7 @@ export default function Dashboard() {
   const router = useRouter();
 
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [isDemo, setIsDemo] = useState(false);
   const [loading, setLoading] = useState(true);
   const [invites, setInvites] = useState<StudentInvite[]>([]);
 
@@ -720,7 +717,7 @@ export default function Dashboard() {
     {
       id: "notif-2",
       title: "Student Account Statement Ready",
-      message: "Invoice: Student Account (UP Running Fee Ledger) updated for Term 1 tuition.",
+      message: "Official High School Tuition Statement updated for Term 1 tuition.",
       time: "2h ago",
       read: false,
       dept: "finance",
@@ -873,16 +870,18 @@ export default function Dashboard() {
             const randomCode = `STU-${randomSuffix}`;
             const tempPass = `StudyHub-${Math.floor(1000 + Math.random() * 9000)}`;
 
-            try {
-              await supabase.from("student_invites").insert({
-                student_name: name,
-                student_email: email,
-                invite_code: randomCode,
-                temp_password: tempPass,
-                status: "active",
-              });
-            } catch (supaErr) {
-              console.warn("Supabase direct insert:", supaErr);
+            if (!isDemo) {
+              try {
+                await supabase.from("student_invites").insert({
+                  student_name: name,
+                  student_email: email,
+                  invite_code: randomCode,
+                  temp_password: tempPass,
+                  status: "active",
+                });
+              } catch (supaErr) {
+                console.warn("Supabase direct insert:", supaErr);
+              }
             }
 
             newImported.push({
@@ -902,7 +901,9 @@ export default function Dashboard() {
         setInvites((prev) => [...newImported, ...prev]);
         setStatusMessage({
           type: "success",
-          text: `Successfully imported ${newImported.length} students! Random signup codes generated and invitation credentials dispatched.`,
+          text: isDemo
+            ? `🔒 Client Showcase Sandbox: Simulated ${newImported.length} students in preview memory. Live database records remain protected.`
+            : `Successfully imported ${newImported.length} students! Random signup codes generated and invitation credentials dispatched.`,
         });
       } else {
         setStatusMessage({
@@ -1036,6 +1037,421 @@ export default function Dashboard() {
   };
 
   // Bulletproof print using hidden iframe to bypass popup blockers
+  // Extracted reusable Study Hub Demo component for both Teacher and Learner views
+  const renderStudyHubDemo = () => {
+                  const currentQ = EXPONENTIAL_QUIZ_DATA[activeQuizIdx];
+                  const totalQuizMarks = EXPONENTIAL_QUIZ_DATA.reduce((acc, q) => acc + q.marks, 0);
+
+                  const getQuizSidebarColor = (idx: number, status: string, isActive: boolean) => {
+                    let base = "bg-white text-slate-700 hover:bg-slate-50 border-slate-200";
+                    if (isQuizSubmitted) {
+                      const sel = quizSelectedAnswers[idx] || [];
+                      const isCorrect = sel.length === 1 && sel[0] === EXPONENTIAL_QUIZ_DATA[idx].correctAnswers[0];
+                      base = isCorrect
+                        ? "bg-emerald-100 text-emerald-800 border-emerald-300 font-bold"
+                        : "bg-red-100 text-red-800 border-red-300 font-bold";
+                    } else {
+                      if (status === "completed") {
+                        base = "bg-emerald-50 text-emerald-700 border-emerald-300 font-bold";
+                      } else if (status === "not-sure") {
+                        base = "bg-amber-50 text-amber-800 border-amber-300 font-bold";
+                      }
+                    }
+
+                    if (isActive) {
+                      return `${base} ring-2 ring-[#b82e2e] ring-offset-1 font-black`;
+                    }
+                    return base;
+                  };
+
+                  return (
+                    <div className="space-y-6">
+                      {/* Top Classroom Header Banner */}
+                      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-[#1e293b] rounded-2xl p-6 text-white shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-red-500/20 text-red-300 border border-red-500/30">
+                              Study Hub Demo Mode
+                            </span>
+                            <span className="text-xs text-slate-400">Grade 12 Mathematics (DBE / IEB Paper 1)</span>
+                          </div>
+                          <h2 className="text-xl font-black tracking-tight text-white">
+                            Advanced Exponential Relations
+                          </h2>
+                          <p className="text-xs text-slate-300 max-w-2xl">
+                            Topic: Exponential Proofs and Variable Manipulation. Video masterclass, comprehensive theory notes, logic diagrams, and 10-question mastery assessment.
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="px-3 py-1.5 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 rounded-xl text-xs font-bold">
+                            Active Interactive Module
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Main Two-Column Layout: Left Syllabus Topics, Right Active Lesson Content */}
+                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                        {/* Left: Grade 12 Syllabus Topic Roster */}
+                        <div className="lg:col-span-4 space-y-4">
+                          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-3">
+                            <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
+                              Grade 12 Mathematics Syllabus
+                            </h3>
+
+                            <div className="space-y-2 text-xs">
+                              {/* Active Topic */}
+                              <div className="p-3 bg-red-50 border-2 border-[#b82e2e] rounded-xl space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-extrabold text-[#b82e2e] text-[11px] uppercase">
+                                    Topic 1 &bull; Active
+                                  </span>
+                                  <span className="px-2 py-0.5 rounded text-[9.5px] font-bold bg-emerald-100 text-emerald-800">
+                                    AVAILABLE
+                                  </span>
+                                </div>
+                                <p className="font-bold text-slate-900 text-xs">
+                                  Advanced Exponential Relations (Proofs &amp; Manipulation)
+                                </p>
+                                <p className="text-[10px] text-slate-500">Video Masterclass &bull; Mastery Quiz (10 Qs)</p>
+                              </div>
+
+                              {/* Locked Syllabus Topics */}
+                              {[
+                                "Functions & Inverse Functions (Hyperbola, Parabola, Exponential)",
+                                "Differential Calculus & Polynomial Factor Theorem",
+                                "Sequences & Series (Arithmetic, Geometric, Sigma)",
+                                "Financial Mathematics (Annuities, Sinking Funds)",
+                                "Analytical Geometry & Circles (DBE Paper 2)",
+                                "Trigonometry (Compound & Double Angles, Identities)",
+                                "Euclidean Geometry & Proportionality Theorem",
+                                "Statistics & Bivariate Regression Analysis",
+                                "Probability & Fundamental Counting Principles",
+                              ].map((lockedTopic, i) => (
+                                <div
+                                  key={i}
+                                  className="p-3 bg-slate-50/70 border border-slate-200/80 rounded-xl opacity-60 flex items-center justify-between cursor-not-allowed"
+                                >
+                                  <div className="space-y-0.5 pr-2">
+                                    <p className="font-semibold text-slate-700 text-[11px]">{lockedTopic}</p>
+                                    <p className="text-[9.5px] text-slate-400">DBE &amp; IEB Core Syllabus</p>
+                                  </div>
+                                  <span className="px-2 py-0.5 bg-slate-200 text-slate-600 rounded text-[9px] font-bold uppercase tracking-wider shrink-0">
+                                    DEMO LOCKED
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Right: Active Lesson Video, Notes & Mastery Quiz */}
+                        <div className="lg:col-span-8 space-y-6">
+                          {/* Video Masterclass Player */}
+                          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+                            <div className="flex items-center justify-between">
+                              <h3 className="text-sm font-bold text-slate-900">
+                                Video Masterclass: Exponential Proofs &amp; Variable Manipulation
+                              </h3>
+                              <span className="text-[11px] text-slate-500 font-mono">DBE Paper 1 Grade 12</span>
+                            </div>
+
+                            <div className="rounded-xl overflow-hidden bg-black shadow-inner">
+                              <video
+                                controls
+                                className="w-full max-h-[420px] object-contain"
+                                src="/assets/exponential-relations-lesson.mp4"
+                              >
+                                Your browser does not support the video tag.
+                              </video>
+                            </div>
+                            <p className="text-xs text-slate-500">
+                              Watch the step-by-step breakdown of exponential laws applied in reverse to isolate variables and prove non-standard equations.
+                            </p>
+                          </div>
+
+                          {/* Comprehensive Course Notes */}
+                          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-6 text-xs text-slate-700">
+                            <div>
+                              <h3 className="text-base font-black text-slate-900 tracking-tight">
+                                Course Notes: Advanced Exponential Relations
+                              </h3>
+                              <p className="text-xs text-slate-500 mt-0.5">
+                                Topic: Exponential Proofs and Variable Manipulation (Grade 12 CAPS / IEB)
+                              </p>
+                            </div>
+
+                            {/* 1. Fundamentals & Laws */}
+                            <div className="space-y-3">
+                              <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#b82e2e]">
+                                1. Fundamentals &amp; Laws
+                              </h4>
+                              <p>
+                                Before we tackle complex proofs, we must master the foundational rules of exponents. In Grade 12, we often use these laws &quot;backward&quot; or to link different variables together.
+                              </p>
+
+                              <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                                <div>
+                                  <strong className="text-slate-900">&bull; Base:</strong> The number being multiplied (e.g., in <span className="font-mono">k^x</span>, <span className="font-mono">k</span> is the base).
+                                </div>
+                                <div>
+                                  <strong className="text-slate-900">&bull; Exponent (Index):</strong> The power to which the base is raised (e.g., in <span className="font-mono">k^x</span>, <span className="font-mono">x</span> is the exponent).
+                                </div>
+                              </div>
+
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-xs text-left border-collapse border border-slate-200">
+                                  <thead className="bg-slate-50 text-slate-900 font-bold">
+                                    <tr>
+                                      <th className="p-2.5 border border-slate-200">Law Name</th>
+                                      <th className="p-2.5 border border-slate-200 font-mono">Formula</th>
+                                      <th className="p-2.5 border border-slate-200">Verbal Rule</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    <tr>
+                                      <td className="p-2.5 border border-slate-200 font-bold">Product Law</td>
+                                      <td className="p-2.5 border border-slate-200 font-mono text-[#b82e2e]">a^m · a^n = a^(m+n)</td>
+                                      <td className="p-2.5 border border-slate-200">When multiplying the same bases, <strong>add</strong> the exponents.</td>
+                                    </tr>
+                                    <tr>
+                                      <td className="p-2.5 border border-slate-200 font-bold">Quotient Law</td>
+                                      <td className="p-2.5 border border-slate-200 font-mono text-[#b82e2e]">a^m ÷ a^n = a^(m-n)</td>
+                                      <td className="p-2.5 border border-slate-200">When dividing the same bases, <strong>subtract</strong> the exponents.</td>
+                                    </tr>
+                                    <tr>
+                                      <td className="p-2.5 border border-slate-200 font-bold">Power Law</td>
+                                      <td className="p-2.5 border border-slate-200 font-mono text-[#b82e2e]">(a^m)^n = a^(m · n)</td>
+                                      <td className="p-2.5 border border-slate-200">A power raised to another power means <strong>multiply</strong> exponents.</td>
+                                    </tr>
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+
+                            {/* 2. Concept Logic Diagram */}
+                            <div className="space-y-3">
+                              <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#b82e2e]">
+                                2. Concept Logic Diagram
+                              </h4>
+                              <p>
+                                This diagram illustrates the &quot;bridge&quot; between different variables using a common base (k):
+                              </p>
+
+                              <div className="p-5 bg-slate-50 border border-slate-200 rounded-xl space-y-3 text-center">
+                                <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
+                                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                                    <p className="font-bold text-blue-900 text-xs">Branch X (Given)</p>
+                                    <p className="font-mono text-[#b82e2e] font-bold text-xs mt-1">k^(1/x) = 3</p>
+                                  </div>
+                                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+                                    <p className="font-bold text-emerald-900 text-xs">Branch Y (Given)</p>
+                                    <p className="font-mono text-[#b82e2e] font-bold text-xs mt-1">k^(1/y) = 4</p>
+                                  </div>
+                                </div>
+
+                                <div className="text-slate-400 text-base">&darr;</div>
+
+                                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl max-w-md mx-auto">
+                                  <p className="font-bold text-amber-900 text-xs">The &quot;Same-Base&quot; Law</p>
+                                  <p className="font-mono text-slate-800 font-bold text-xs mt-1">
+                                    k^(1/x) · k^(1/y) = k^(1/x + 1/y)
+                                  </p>
+                                </div>
+
+                                <div className="text-slate-400 text-base">&darr;</div>
+
+                                <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl max-w-md mx-auto">
+                                  <p className="font-bold text-purple-900 text-xs">Substitution &amp; Final Result</p>
+                                  <p className="font-mono text-slate-800 text-xs mt-1">
+                                    3 · 4 = 12 &bull; Since 12 = k^(1/w) ⟹ 1/w = 1/x + 1/y
+                                  </p>
+                                  <p className="font-mono text-[#b82e2e] font-extrabold text-sm mt-1">
+                                    w = (xy) / (x + y)
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* 3. Worked Example Proof */}
+                            <div className="space-y-3">
+                              <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#b82e2e]">
+                                3. Worked Example (The Proof)
+                              </h4>
+                              <div className="p-4 bg-slate-900 text-white rounded-xl space-y-2 font-mono text-xs">
+                                <p className="text-amber-300 font-bold">
+                                  Problem: Given k^(1/x) = 3, k^(1/y) = 4, and k^(1/w) = 12. Prove that w = (xy)/(x+y).
+                                </p>
+                                <div className="space-y-1 text-slate-200 pt-1">
+                                  <p><strong>Step 1:</strong> Identify numerical relationship: 3 × 4 = 12</p>
+                                  <p><strong>Step 2:</strong> Substitute exponential forms: k^(1/x) · k^(1/y) = k^(1/w)</p>
+                                  <p><strong>Step 3:</strong> Apply Product Law: k^(1/x + 1/y) = k^(1/w)</p>
+                                  <p><strong>Step 4:</strong> Drop the bases: 1/x + 1/y = 1/w</p>
+                                  <p><strong>Step 5:</strong> Find common denominator: (y + x)/(xy) = 1/w ⟹ <strong>w = (xy)/(x+y) (Q.E.D.)</strong></p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 4. Mastery Quiz (Exact Architecture from src/archive/quiz/page.tsx) */}
+                          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-6">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                              <div>
+                                <h3 className="text-base font-black text-slate-900 tracking-tight">
+                                  4. Mastery Quiz: 10 Questions
+                                </h3>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                  Test your understanding from basic exponential laws to complex matric proofs.
+                                </p>
+                              </div>
+                              {isQuizSubmitted ? (
+                                <div className="flex items-center gap-2">
+                                  <span className="px-3 py-1.5 bg-emerald-50 text-emerald-700 font-extrabold text-xs rounded-xl border border-emerald-200">
+                                    Score: {quizScore} / {totalQuizMarks} marks ({Math.round((quizScore / totalQuizMarks) * 100)}%)
+                                  </span>
+                                  <button
+                                    onClick={handleQuizRetake}
+                                    className="px-3 py-1.5 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                                  >
+                                    Retake Quiz
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={handleQuizSubmit}
+                                  className="px-4 py-2 bg-[#b82e2e] hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
+                                >
+                                  Submit Quiz Assessment
+                                </button>
+                              )}
+                            </div>
+
+                            {/* Top Stepper Button Pills (1 to 10) */}
+                            <div className="flex flex-wrap gap-1.5 pb-2">
+                              {EXPONENTIAL_QUIZ_DATA.map((_, idx) => (
+                                <button
+                                  key={idx}
+                                  onClick={() => setActiveQuizIdx(idx)}
+                                  className={`w-9 h-9 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center ${getQuizSidebarColor(
+                                    idx,
+                                    quizStatuses[idx],
+                                    activeQuizIdx === idx
+                                  )}`}
+                                >
+                                  {idx + 1}
+                                </button>
+                              ))}
+                            </div>
+
+                            {/* Active Question Display Card */}
+                            <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-slate-200 text-slate-700">
+                                    Question {activeQuizIdx + 1} of 10
+                                  </span>
+                                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-blue-50 text-blue-700 border border-blue-200">
+                                    {currentQ.intensity} Intensity
+                                  </span>
+                                </div>
+                                <span className="font-extrabold text-xs text-[#b82e2e]">
+                                  {currentQ.marks} Marks
+                                </span>
+                              </div>
+
+                              <p className="font-bold text-slate-900 text-sm sm:text-base leading-snug">
+                                {currentQ.question}
+                              </p>
+
+                              {/* Options */}
+                              <div className="space-y-2.5 pt-1">
+                                {currentQ.options.map((opt, oIdx) => {
+                                  const isSelected = (quizSelectedAnswers[activeQuizIdx] || []).includes(oIdx);
+                                  const isCorrect = currentQ.correctAnswers.includes(oIdx);
+
+                                  let optColor = "bg-white border-slate-200 text-slate-800 hover:border-slate-300";
+                                  if (isQuizSubmitted) {
+                                    if (isCorrect) {
+                                      optColor = "bg-emerald-50 border-emerald-400 text-emerald-900 font-bold";
+                                    } else if (isSelected && !isCorrect) {
+                                      optColor = "bg-red-50 border-red-300 text-red-900";
+                                    }
+                                  } else if (isSelected) {
+                                    optColor = "bg-red-50 border-[#b82e2e] text-[#b82e2e] font-bold";
+                                  }
+
+                                  return (
+                                    <button
+                                      key={oIdx}
+                                      onClick={() => handleQuizSelectOption(activeQuizIdx, oIdx)}
+                                      disabled={isQuizSubmitted}
+                                      className={`w-full text-left p-3.5 rounded-xl border text-xs flex items-center gap-3 transition-colors cursor-pointer ${optColor}`}
+                                    >
+                                      <div
+                                        className={`w-5 h-5 rounded-full border flex items-center justify-center text-[10px] shrink-0 ${
+                                          isSelected
+                                            ? "border-[#b82e2e] bg-[#b82e2e] text-white"
+                                            : "border-slate-300"
+                                        }`}
+                                      >
+                                        {isSelected ? "✓" : ""}
+                                      </div>
+                                      <span className="font-medium">{opt}</span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+
+                              {/* Actions Bar */}
+                              <div className="flex items-center justify-between pt-3 border-t border-slate-200 text-xs">
+                                <button
+                                  onClick={() => setActiveQuizIdx(Math.max(0, activeQuizIdx - 1))}
+                                  disabled={activeQuizIdx === 0}
+                                  className="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-100 disabled:opacity-30 cursor-pointer font-bold"
+                                >
+                                  &larr; Previous
+                                </button>
+
+                                {!isQuizSubmitted && (
+                                  <button
+                                    onClick={handleQuizMarkNotSure}
+                                    className="px-3 py-1.5 text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg font-bold cursor-pointer"
+                                  >
+                                    Mark as Not Sure
+                                  </button>
+                                )}
+
+                                <button
+                                  onClick={() =>
+                                    setActiveQuizIdx(
+                                      Math.min(EXPONENTIAL_QUIZ_DATA.length - 1, activeQuizIdx + 1)
+                                    )
+                                  }
+                                  disabled={activeQuizIdx === EXPONENTIAL_QUIZ_DATA.length - 1}
+                                  className="px-4 py-1.5 bg-slate-900 text-white rounded-lg hover:bg-black disabled:opacity-30 cursor-pointer font-bold"
+                                >
+                                  Next &rarr;
+                                </button>
+                              </div>
+
+                              {/* Explanations Accordion (Shows in review mode or upon submission) */}
+                              {isQuizSubmitted && (
+                                <div className="mt-4 p-4 bg-emerald-50/70 border border-emerald-200 rounded-xl space-y-1.5 text-xs">
+                                  <div className="flex items-center gap-1.5 font-bold text-emerald-900">
+                                    <span>Explanation &amp; Mathematical Proof:</span>
+                                  </div>
+                                  <p className="text-emerald-950 font-sans leading-relaxed">
+                                    {currentQ.explanation}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+  };
+
   const printDocument = (htmlToPrint: string) => {
     if (!htmlToPrint) return;
 
@@ -1125,23 +1541,31 @@ export default function Dashboard() {
   const getDocHtml = useCallback(
     (type: DocumentType, targetStudent?: Partial<StudentDocData>, notes?: string) => {
       const student: StudentDocData = {
-        name: targetStudent?.name || profile?.full_name || "John Doe",
-        studentId: targetStudent?.studentId || "STU-001",
-        email: targetStudent?.email || profile?.email || "student@example.com",
-        programme: targetStudent?.programme || "12134002  BSc in Computer Science",
-        address: targetStudent?.address || "Main Campus",
-        enrolledModules: targetStudent?.enrolledModules || ["Mathematics Grade 12", "Physical Sciences Grade 12"],
-        monthlyFee: targetStudent?.monthlyFee || 1500,
-        totalDebt: targetStudent?.totalDebt || 12000,
-        paidAmount: targetStudent?.paidAmount || 11010,
+        name: targetStudent?.name || profile?.full_name || "Olwethuthando Zuma",
+        studentId: targetStudent?.studentId || (profile?.role === "student" ? "STU-001" : "STU-001"),
+        email: targetStudent?.email || profile?.email || "olwethu.zuma@gmail.com",
+        programme: targetStudent?.programme || "Grade 12 (DBE / IEB Senior FET Phase)",
+        address: targetStudent?.address || "14 Bergzicht Avenue, Constantia, Cape Town, 7806",
+        enrolledModules: targetStudent?.enrolledModules || [
+          "Mathematics Grade 12 (NSC Senior Phase)",
+          "Physical Sciences Grade 12 (NSC Senior Phase)",
+          "Life Sciences Grade 12",
+          "English Home Language Grade 12",
+          "First Additional Language (FAL)",
+          "Life Orientation (LO)",
+          "Accounting / Geography Elective",
+        ],
+        monthlyFee: targetStudent?.monthlyFee || 3500,
+        totalDebt: targetStudent?.totalDebt || 3500,
+        paidAmount: targetStudent?.paidAmount || 3500,
       };
 
       const institution: InstitutionDocData = {
-        institutionName: "StudyHub Education",
-        educatorName: profile?.full_name || "Academic Administration",
-        contactEmail: "ssc@studyhub.logtraq.co.za",
+        institutionName: "LogTraq Tutoring Academy",
+        educatorName: profile?.role === "teacher" ? profile.full_name : "Lead Educator (Mathematics & Science)",
+        contactEmail: "support@logtraq.co.za",
         website: "www.studyhub.logtraq.co.za",
-        logoUrl: "/assets/logo.png",
+        logoUrl: "/assets/logtraq-logo-clean.png",
       };
 
       return generateDocumentHtml(type, student, institution, notes || docExtraNotes);
@@ -1153,70 +1577,113 @@ export default function Dashboard() {
   useEffect(() => {
     async function loadData() {
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
+        let currentProf: Profile | null = null;
+        let isDemoActive = false;
 
-        if (!session) {
-          router.replace("/home");
-          return;
+        if (typeof window !== "undefined") {
+          const demoRaw = localStorage.getItem("studyhub_demo_session");
+          if (demoRaw) {
+            try {
+              const parsed = JSON.parse(demoRaw);
+              if (parsed?.role) {
+                isDemoActive = true;
+                currentProf = {
+                  id: parsed.role === "teacher" ? "demo-teacher-01" : "STU-001",
+                  email: parsed.email || (parsed.role === "teacher" ? "demo.teacher@studyhub.co.za" : "olwethu.zuma@gmail.com"),
+                  role: parsed.role,
+                  full_name: parsed.full_name || (parsed.role === "teacher" ? "Demo Lead Educator" : "Olwethuthando Zuma"),
+                  must_change_password: false,
+                  student_capacity: 50,
+                };
+              }
+            } catch (e) {
+              localStorage.removeItem("studyhub_demo_session");
+            }
+          }
         }
 
-        const { data: prof, error: profErr } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", session.user.id)
-          .single();
+        if (!currentProf) {
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
 
-        if (profErr || !prof) {
-          router.replace("/home");
-          return;
+          if (!session) {
+            router.replace("/home");
+            return;
+          }
+
+          const { data: prof, error: profErr } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", session.user.id)
+            .single();
+
+          if (profErr || !prof) {
+            router.replace("/home");
+            return;
+          }
+          currentProf = prof as Profile;
         }
 
-        setProfile(prof as Profile);
-        if (prof.full_name) {
-          const parts = (prof.full_name as string).trim().split(" ");
+        setProfile(currentProf);
+        setIsDemo(isDemoActive);
+
+        if (currentProf.full_name) {
+          const parts = (currentProf.full_name as string).trim().split(" ");
           setProfileFirstName(parts[0] || "");
           setProfileSurname(parts.slice(1).join(" ") || "");
         }
 
-        if (prof.role === "teacher") {
-          const { data: invData } = await supabase
-            .from("student_invites")
-            .select("*")
-            .order("created_at", { ascending: false });
+        const defaultInvites: StudentInvite[] = HIGH_SCHOOL_STUDENTS.map((hs) => ({
+          id: hs.studentId,
+          student_name: hs.name,
+          student_email: hs.email,
+          invite_code: hs.studentId,
+          temp_password: `StudyHub-${hs.studentId.replace("STU-", "")}`,
+          status: "active",
+          created_at: new Date(Date.now() - hs.num * 86400000).toISOString(),
+          phone: hs.phone,
+        }));
 
-          const defaultInvites: StudentInvite[] = HIGH_SCHOOL_STUDENTS.map((hs) => ({
-            id: hs.studentId,
-            student_name: hs.name,
-            student_email: hs.email,
-            invite_code: hs.studentId,
-            temp_password: `StudyHub-${hs.studentId.replace("STU-", "")}`,
-            status: "active",
-            created_at: new Date(Date.now() - hs.num * 86400000).toISOString(),
-            phone: hs.phone,
-          }));
+        if (currentProf.role === "teacher") {
+          if (!isDemoActive) {
+            const { data: invData } = await supabase
+              .from("student_invites")
+              .select("*")
+              .order("created_at", { ascending: false });
 
-          if (invData && invData.length >= 5) {
-            setInvites(invData);
-            setDocStudentId(invData[0].id);
-            setInvStudentId(invData[0].id);
-          } else {
-            const existingEmails = new Set((invData || []).map((i) => (i.student_email || "").toLowerCase()));
-            const merged = [...(invData || [])];
-            for (const std of defaultInvites) {
-              if (!existingEmails.has(std.student_email.toLowerCase())) {
-                merged.push(std);
+            if (invData && invData.length >= 5) {
+              setInvites(invData);
+              setDocStudentId(invData[0].id);
+              setInvStudentId(invData[0].id);
+            } else {
+              const existingEmails = new Set((invData || []).map((i) => (i.student_email || "").toLowerCase()));
+              const merged = [...(invData || [])];
+              for (const std of defaultInvites) {
+                if (!existingEmails.has(std.student_email.toLowerCase())) {
+                  merged.push(std);
+                }
+              }
+              const finalFive = merged.slice(0, 5);
+              setInvites(finalFive);
+              if (finalFive.length > 0) {
+                setDocStudentId(finalFive[0].id);
+                setInvStudentId(finalFive[0].id);
               }
             }
-            const finalFive = merged.slice(0, 5);
-            setInvites(finalFive);
-            if (finalFive.length > 0) {
-              setDocStudentId(finalFive[0].id);
-              setInvStudentId(finalFive[0].id);
-            }
+          } else {
+            setInvites(defaultInvites);
+            setDocStudentId(defaultInvites[0].id);
+            setInvStudentId(defaultInvites[0].id);
           }
-        }      } catch (err) {
+        } else {
+          // Learner role
+          setDocStudentId("STU-001");
+          setInvStudentId("STU-001");
+          setActiveDepartment("modules");
+          setActiveSubPage("registered_modules");
+        }
+      } catch (err) {
         console.error("Dashboard initialization error:", err);
       } finally {
         setLoading(false);
@@ -1317,6 +1784,9 @@ export default function Dashboard() {
 
   const handleLogout = async () => {
     try {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("studyhub_demo_session");
+      }
       await supabase.auth.signOut();
     } catch (err) {
       console.warn("Sign out error:", err);
@@ -1409,19 +1879,21 @@ export default function Dashboard() {
       phone: enrollPhone.trim() || undefined,
     };
 
-    try {
-      if (profile?.id) {
-        await supabase.from("student_invites").insert({
-          teacher_id: profile.id,
-          student_name: fullName,
-          student_email: enrollEmail.trim(),
-          invite_code: generatedCode,
-          temp_password: tempPassword,
-          status: "pending",
-        });
+    if (!isDemo) {
+      try {
+        if (profile?.id) {
+          await supabase.from("student_invites").insert({
+            teacher_id: profile.id,
+            student_name: fullName,
+            student_email: enrollEmail.trim(),
+            invite_code: generatedCode,
+            temp_password: tempPassword,
+            status: "pending",
+          });
+        }
+      } catch (err) {
+        console.warn("Could not insert invite into Supabase:", err);
       }
-    } catch (err) {
-      console.warn("Could not insert invite into Supabase:", err);
     }
 
     setInvites([newStudent, ...invites]);
@@ -1431,7 +1903,12 @@ export default function Dashboard() {
     setEnrollPhone("");
     setEnrollStudentNumber("");
     setShowEnrollModal(false);
-    setStatusMessage({ type: "success", text: `${fullName} enrolled successfully (Student No: ${generatedCode})` });
+    setStatusMessage({
+      type: "success",
+      text: isDemo
+        ? `🔒 Client Sandbox: Simulated enrollment for ${fullName} (${generatedCode}) in memory. Live database records remain protected.`
+        : `${fullName} enrolled successfully (Student No: ${generatedCode})`,
+    });
   };
 
   const handleSpreadsheetTextChange = (text: string) => {
@@ -1499,6 +1976,22 @@ export default function Dashboard() {
         backgroundSize: "22px 22px",
       }}
     >
+      {/* Sandbox Top Warning Pill Banner for Client Demonstrations */}
+      {isDemo && (
+        <div className="w-full bg-amber-500/15 border-b border-amber-500/30 px-4 py-2 text-center text-xs font-semibold text-amber-900 flex items-center justify-center gap-2 relative z-50">
+          <span>🔒</span>
+          <span>
+            <strong>Client Demonstration Sandbox</strong> &bull; Read-only preview mode. Live student records &amp; credentials protected.
+          </span>
+          <button
+            onClick={handleLogout}
+            className="ml-3 px-2 py-0.5 bg-amber-800 text-white rounded text-[11px] font-bold hover:bg-amber-900 cursor-pointer"
+          >
+            Exit Demo
+          </button>
+        </div>
+      )}
+
       {/* Universal Top Header: Clean Executive White Banner */}
       <header className="w-full border-b border-slate-200 bg-white px-4 sm:px-8 py-3 flex items-center justify-between sticky top-0 z-40 shadow-xs relative">
         {/* Left: Authentic a+ Logo + LogTraq with Back Arrow when inside a department */}
@@ -1808,26 +2301,20 @@ export default function Dashboard() {
             {/* --- STUDENT: FINANCES --- */}
             {!isTeacher && activeDepartment === "finance" && (
               <div className="space-y-6">
-                {/* 1. Student Account (Invoice) & UP Running Ledger */}
+                {/* 1. Student Account (Invoice) & High School Tuition Statement */}
                 {activeSubPage === "student_account" && (
                   <div className="space-y-5">
                     <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
                       <div>
                         <div className="flex items-center gap-2">
-                          <h2 className="text-base font-bold text-slate-900">Invoice: Student Account</h2>
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                            R 990.00 Due By You
+                          <h2 className="text-base font-bold text-slate-900">Official Tuition Statement &amp; Invoice</h2>
+                          <span className="px-2.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            R 0.00 Outstanding &bull; Account Paid in Full
                           </span>
                         </div>
-                        <p className="text-xs text-slate-500">Official statement of account &amp; fee ledger &bull; University of Pretoria model.</p>
+                        <p className="text-xs text-slate-500">Official statement of account &amp; fee ledger &bull; LogTraq High School STEM Tutoring.</p>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <button
-                          onClick={() => navigateTo("finance", "make_payment")}
-                          className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm"
-                        >
-                          <span>Pay R 990.00 via Paystack</span>
-                        </button>
                         <button
                           onClick={() => printDocument(getDocHtml("student_invoice"))}
                           className="px-4 py-2 bg-[#b82e2e] hover:bg-[#a02626] text-white text-xs font-bold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm"
@@ -1835,7 +2322,7 @@ export default function Dashboard() {
                           <span>Print / Save as PDF</span>
                         </button>
                         <button
-                          onClick={() => downloadDocument(getDocHtml("student_invoice"), "Invoice_Student_Account.html")}
+                          onClick={() => downloadDocument(getDocHtml("student_invoice"), "LogTraq_Tuition_Statement.html")}
                           className="px-3 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-lg transition-colors cursor-pointer"
                         >
                           Download Statement (.html)
@@ -1853,42 +2340,46 @@ export default function Dashboard() {
                 {activeSubPage === "make_payment" && (
                   <div className="space-y-6 max-w-xl">
                     <div className="bg-white border border-slate-200 rounded-xl p-6 space-y-4 shadow-sm">
-                      <h3 className="text-base font-bold text-slate-900">Instant Online Tuition Settlement (Paystack)</h3>
+                      <h3 className="text-base font-bold text-slate-900">High School Tuition Settlement (Paystack)</h3>
                       <p className="text-xs text-slate-500">
-                        Settle your tuition fees instantly via Debit Card, Credit Card, or Capitec Pay. Real-time reconciliation.
+                        Settle tuition fees instantly via Debit Card, Credit Card, or Capitec Pay with immediate digital receipt generation.
                       </p>
                       <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-2 text-xs">
                         <div className="flex justify-between font-medium">
-                          <span>Immediate Balance Due:</span>
-                          <span className="font-bold text-[#b82e2e]">R 990.00</span>
+                          <span>Current Account Status:</span>
+                          <span className="font-bold text-emerald-700">Paid in Full (R 0.00 Due)</span>
                         </div>
                         <div className="flex justify-between text-slate-500">
-                          <span>Student Reference:</span>
+                          <span>Learner Reference Number:</span>
                           <span className="font-mono font-bold text-slate-800">STU-001</span>
+                        </div>
+                        <div className="flex justify-between text-slate-500">
+                          <span>Registered Learner:</span>
+                          <span className="font-bold text-slate-800">{profile?.full_name || "Olwethuthando Zuma"}</span>
                         </div>
                       </div>
                       <button
                         onClick={() => {
                           setStatusMessage({
                             type: "success",
-                            text: "Paystack Gateway active: Payment of R 990.00 cleared & logged on student ledger.",
+                            text: "Account is in good standing: All Term 1 fees are fully settled with thanks.",
                           });
                         }}
                         className="w-full py-3 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-lg transition-colors cursor-pointer"
                       >
-                        Proceed to Pay R 990.00 via Paystack
+                        Account Paid in Full &bull; View Receipt
                       </button>
                     </div>
 
                     <div className="bg-white border border-slate-200 rounded-xl p-6 space-y-3 shadow-sm text-xs">
                       <h3 className="text-sm font-bold text-slate-900">Direct Bank Remittance (EFT)</h3>
-                      <p className="text-slate-500">For electronic funds transfers, please utilize the official institutional account details:</p>
+                      <p className="text-slate-500">For electronic funds transfers, please utilize the official academy account details:</p>
                       <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-1.5">
-                        <p><strong>Bank:</strong> First National Bank (FNB) / ABSA Bank</p>
-                        <p><strong>Account Name:</strong> StudyHub Education (Pty) Ltd</p>
+                        <p><strong>Bank:</strong> First National Bank (FNB) / Standard Bank</p>
+                        <p><strong>Account Name:</strong> LogTraq Tutoring Academy (Pty) Ltd</p>
                         <p><strong>Account Number:</strong> 62849201948</p>
                         <p><strong>Branch Code:</strong> 250655</p>
-                        <p><strong>Beneficiary Reference:</strong> <span className="font-mono font-bold text-[#b82e2e]">STU-001</span></p>
+                        <p><strong>Beneficiary Reference:</strong> <span className="font-mono font-bold text-[#b82e2e]">STU-001 (Olwethuthando Zuma)</span></p>
                       </div>
                     </div>
                   </div>
@@ -1900,7 +2391,7 @@ export default function Dashboard() {
                     <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm">
                       <div className="px-5 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
                         <h3 className="text-sm font-bold text-slate-900">Credited Payment Receipts</h3>
-                        <span className="text-xs text-slate-500">Verified institutional receipts</span>
+                        <span className="text-xs text-slate-500">Verified official receipts</span>
                       </div>
                       <table className="w-full text-xs text-left">
                         <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider text-[11px]">
@@ -1914,24 +2405,10 @@ export default function Dashboard() {
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                           <tr>
-                            <td className="py-3 px-4">2026/01/09</td>
-                            <td className="py-3 px-4 font-medium text-slate-900">ABSA Bank Electronic Transfer</td>
-                            <td className="py-3 px-4 font-mono text-slate-500">BANK STMT SEQ 2338467</td>
-                            <td className="py-3 px-4 text-right font-bold text-emerald-700">R 29,000.00</td>
-                            <td className="py-3 px-4 text-right">
-                              <button
-                                onClick={() => printDocument(getDocHtml("student_invoice"))}
-                                className="px-2.5 py-1 border border-slate-200 hover:border-slate-400 text-slate-700 text-[11px] font-bold rounded cursor-pointer"
-                              >
-                                Print Statement
-                              </button>
-                            </td>
-                          </tr>
-                          <tr>
-                            <td className="py-3 px-4">2026/04/23</td>
+                            <td className="py-3 px-4 font-mono">2026/01/15</td>
                             <td className="py-3 px-4 font-medium text-slate-900">Direct EFT Tuition Settlement</td>
-                            <td className="py-3 px-4 font-mono text-slate-500">BANK STMT SEQ 2378897</td>
-                            <td className="py-3 px-4 text-right font-bold text-emerald-700">R 5,700.00</td>
+                            <td className="py-3 px-4 font-mono text-slate-500">EFT-STU001-TERM1</td>
+                            <td className="py-3 px-4 text-right font-bold text-emerald-700">R 3,500.00</td>
                             <td className="py-3 px-4 text-right">
                               <button
                                 onClick={() => printDocument(getDocHtml("student_invoice"))}
@@ -1942,10 +2419,10 @@ export default function Dashboard() {
                             </td>
                           </tr>
                           <tr>
-                            <td className="py-3 px-4">2026/07/24</td>
-                            <td className="py-3 px-4 font-medium text-slate-900">Paystack Instant Card Clearing</td>
-                            <td className="py-3 px-4 font-mono text-slate-500">BANK STMT SEQ 2407178</td>
-                            <td className="py-3 px-4 text-right font-bold text-emerald-700">R 30,000.00</td>
+                            <td className="py-3 px-4 font-mono">2026/01/10</td>
+                            <td className="py-3 px-4 font-medium text-slate-900">Annual Matric Study Pack &amp; Past Papers</td>
+                            <td className="py-3 px-4 font-mono text-slate-500">CARD-PAY-002931</td>
+                            <td className="py-3 px-4 text-right font-bold text-emerald-700">R 700.00</td>
                             <td className="py-3 px-4 text-right">
                               <button
                                 onClick={() => printDocument(getDocHtml("student_invoice"))}
@@ -1966,8 +2443,8 @@ export default function Dashboard() {
                   <div className="space-y-4 max-w-2xl bg-white border border-slate-200 rounded-xl p-6 shadow-sm text-xs">
                     <div className="flex justify-between items-center border-b border-slate-200 pb-3">
                       <div>
-                        <h3 className="text-sm font-bold text-slate-900">2026 Academic Tuition Fee Structure</h3>
-                        <p className="text-slate-500">Approved fee schedule per registered module and calendar term.</p>
+                        <h3 className="text-sm font-bold text-slate-900">2026 High School Academic Fee Structure</h3>
+                        <p className="text-slate-500">Approved termly tuition fee schedule for Grade 12 DBE/IEB NSC candidates.</p>
                       </div>
                       <button
                         onClick={() => printDocument(getDocHtml("enrolment_confirmation"))}
@@ -1979,20 +2456,20 @@ export default function Dashboard() {
 
                     <div className="space-y-2 pt-2">
                       <div className="flex justify-between py-1.5 border-b border-slate-100">
-                        <span>Mathematics Grade 12 (Curriculum & Tutorial)</span>
-                        <strong className="text-slate-900">R 4,050.00 / term</strong>
+                        <span>7-Subject Senior FET Package (Maths, Physics, Life Sciences, English, FAL, LO, Elective)</span>
+                        <strong className="text-slate-900">R 3,500.00 / term</strong>
                       </div>
                       <div className="flex justify-between py-1.5 border-b border-slate-100">
-                        <span>Physical Sciences Grade 12 (Theory & Practical)</span>
-                        <strong className="text-slate-900">R 3,660.00 / term</strong>
+                        <span>Interactive Video Lessons &amp; StudyHub LMS Access</span>
+                        <strong className="text-emerald-700">Included</strong>
                       </div>
                       <div className="flex justify-between py-1.5 border-b border-slate-100">
-                        <span>E-Learning Portal License & Past Papers Pack</span>
-                        <strong className="text-slate-900">R 452.00 / annum</strong>
+                        <span>Grade 12 Past Exam Papers &amp; Worked Solutions Pack</span>
+                        <strong className="text-emerald-700">Included</strong>
                       </div>
                       <div className="flex justify-between py-1.5 border-b border-slate-100">
-                        <span>Technology Infrastructure & LMS Access</span>
-                        <strong className="text-slate-900">R 390.00 / annum</strong>
+                        <span>Weekly Live Virtual Tutorials (Google Meet / Zoom)</span>
+                        <strong className="text-emerald-700">Included</strong>
                       </div>
                     </div>
                   </div>
@@ -2000,67 +2477,160 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* --- STUDENT: MY MODULES --- */}
+            {/* --- STUDENT: MY MODULES / LEARNING HUB --- */}
             {!isTeacher && activeDepartment === "modules" && (
               <div className="space-y-6">
                 {activeSubPage === "registered_modules" && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="border border-slate-200 rounded-xl p-5 bg-white space-y-3 shadow-sm">
-                      <div className="flex justify-between items-center">
-                        <span className="text-[11px] font-bold text-[#b82e2e] bg-red-50 px-2 py-0.5 rounded">MAT 114</span>
-                        <span className="text-xs text-emerald-700 font-bold">Active &bull; 78%</span>
+                  <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <h2 className="text-base font-bold text-slate-900">Registered Matric Subjects</h2>
+                        <p className="text-xs text-slate-500">Grade 12 Senior FET Phase (DBE / IEB Curriculum)</p>
                       </div>
-                      <h3 className="text-sm font-bold text-slate-900">Mathematics Grade 12</h3>
-                      <p className="text-xs text-slate-500">Calculus, Functions, Analytical Geometry &amp; Trigonometry.</p>
-                      <a
-                        href="https://moodle.org"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg transition-colors"
+                      <button
+                        onClick={() => navigateTo("modules", "studyhub_demo")}
+                        className="px-4 py-2 bg-[#b82e2e] hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
                       >
-                        <span>Open in Moodle</span>
+                        <span>Open Study Hub Demo &amp; Quiz</span>
                         <ExternalLinkIcon className="w-3.5 h-3.5" />
-                      </a>
+                      </button>
                     </div>
 
-                    <div className="border border-slate-200 rounded-xl p-5 bg-white space-y-3 shadow-sm">
-                      <div className="flex justify-between items-center">
-                        <span className="text-[11px] font-bold text-[#b82e2e] bg-red-50 px-2 py-0.5 rounded">PHY 114</span>
-                        <span className="text-xs text-emerald-700 font-bold">Active &bull; 72%</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Subject 1: Mathematics */}
+                      <div className="border border-slate-200 rounded-xl p-5 bg-white space-y-3 shadow-sm hover:border-[#b82e2e]/40 transition-colors">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[11px] font-bold text-[#b82e2e] bg-red-50 px-2 py-0.5 rounded">MATRIC STEM</span>
+                          <span className="text-xs text-emerald-700 font-bold">Current Mark: 88%</span>
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-bold text-slate-900">Mathematics Grade 12</h3>
+                          <p className="text-xs text-slate-500 mt-1">Calculus, Functions &amp; Inverses, Analytical Geometry, Trigonometry, Exponential Relations.</p>
+                        </div>
+                        <div className="flex items-center gap-2 pt-1">
+                          <button
+                            onClick={() => navigateTo("modules", "studyhub_demo")}
+                            className="px-3 py-1.5 bg-[#b82e2e] hover:bg-red-700 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                          >
+                            Watch Video Lesson
+                          </button>
+                          <button
+                            onClick={() => navigateTo("modules", "studyhub_demo")}
+                            className="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                          >
+                            Take 10-Q Quiz
+                          </button>
+                        </div>
                       </div>
-                      <h3 className="text-sm font-bold text-slate-900">Physical Sciences Grade 12</h3>
-                      <p className="text-xs text-slate-500">Newtonian Mechanics, Organic Chemistry, Doppler Effect.</p>
-                      <a
-                        href="https://moodle.org"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg transition-colors"
-                      >
-                        <span>Open in Moodle</span>
-                        <ExternalLinkIcon className="w-3.5 h-3.5" />
-                      </a>
+
+                      {/* Subject 2: Physical Sciences */}
+                      <div className="border border-slate-200 rounded-xl p-5 bg-white space-y-3 shadow-sm hover:border-[#b82e2e]/40 transition-colors">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[11px] font-bold text-[#b82e2e] bg-red-50 px-2 py-0.5 rounded">MATRIC STEM</span>
+                          <span className="text-xs text-emerald-700 font-bold">Current Mark: 82%</span>
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-bold text-slate-900">Physical Sciences Grade 12</h3>
+                          <p className="text-xs text-slate-500 mt-1">Newtonian Mechanics, Work-Energy-Power, Organic Chemistry, Doppler Effect.</p>
+                        </div>
+                        <div className="flex items-center gap-2 pt-1">
+                          <button
+                            onClick={() => navigateTo("modules", "study_materials")}
+                            className="px-3 py-1.5 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                          >
+                            Download Revision Pack
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Subject 3: Life Sciences */}
+                      <div className="border border-slate-200 rounded-xl p-5 bg-white space-y-3 shadow-sm hover:border-[#b82e2e]/40 transition-colors">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">MATRIC BIOLOGY</span>
+                          <span className="text-xs text-emerald-700 font-bold">Current Mark: 79%</span>
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-bold text-slate-900">Life Sciences Grade 12</h3>
+                          <p className="text-xs text-slate-500 mt-1">DNA Code of Life, Meiosis, Genetics &amp; Inheritance, Human Evolution.</p>
+                        </div>
+                        <div className="flex items-center gap-2 pt-1">
+                          <button
+                            onClick={() => navigateTo("modules", "study_materials")}
+                            className="px-3 py-1.5 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                          >
+                            Download Exam Pack
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Subject 4: English Home Language */}
+                      <div className="border border-slate-200 rounded-xl p-5 bg-white space-y-3 shadow-sm hover:border-[#b82e2e]/40 transition-colors">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">MATRIC LANGUAGE</span>
+                          <span className="text-xs text-emerald-700 font-bold">Current Mark: 84%</span>
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-bold text-slate-900">English Home Language Grade 12</h3>
+                          <p className="text-xs text-slate-500 mt-1">Shakespeare / Drama, Prescribed Poetry, Transactional Writing &amp; Critical Language.</p>
+                        </div>
+                        <div className="flex items-center gap-2 pt-1">
+                          <button
+                            onClick={() => printDocument(getDocHtml("academic_progress"))}
+                            className="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                          >
+                            View SBA Report
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
 
+                {/* Sub-tab 2: Study Hub Demo inside Learner Portal */}
+                {activeSubPage === "studyhub_demo" && (
+                  <div>{renderStudyHubDemo()}</div>
+                )}
+
+                {/* Sub-tab 3: Past Papers & Exam Packs */}
                 {activeSubPage === "study_materials" && (
-                  <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-3 shadow-sm text-xs">
-                    <h3 className="text-sm font-bold text-slate-900">Past Exam Packs &amp; Study Resources</h3>
-                    <div className="space-y-2">
+                  <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4 shadow-sm text-xs">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900">Matric DBE/IEB Past Exam Packs &amp; Solutions</h3>
+                      <p className="text-slate-500 mt-0.5">Official past papers and step-by-step worked solutions for Grade 12 exam readiness.</p>
+                    </div>
+                    <div className="space-y-2.5">
                       <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-200">
-                        <span>Mathematics Paper 1 (Calculus &amp; Algebra) &ndash; 2025 Final Exam</span>
+                        <div>
+                          <strong className="text-slate-900 block">Mathematics Paper 1 (Algebra, Calculus, Sequences)</strong>
+                          <span className="text-[11px] text-slate-500">2025 National Senior Certificate Final Exam with Step-by-Step Marking Guidelines</span>
+                        </div>
                         <button
-                          onClick={() => downloadDocument(getDocHtml("academic_progress"), "Math_P1_PastPaper.html")}
-                          className="px-3 py-1 bg-slate-900 text-white font-bold rounded text-xs cursor-pointer"
+                          onClick={() => downloadDocument(getDocHtml("academic_progress"), "Math_P1_WorkedSolutions_2025.html")}
+                          className="px-3.5 py-1.5 bg-slate-900 hover:bg-black text-white font-bold rounded text-xs cursor-pointer"
                         >
                           Download Pack
                         </button>
                       </div>
                       <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-200">
-                        <span>Physical Sciences Paper 1 (Physics Mechanics Revision Pack)</span>
+                        <div>
+                          <strong className="text-slate-900 block">Physical Sciences Paper 1 (Physics Mechanics Revision Pack)</strong>
+                          <span className="text-[11px] text-slate-500">Newton&apos;s Laws, Vertical Projectile Motion &amp; Work-Energy Comprehensive Worked Examples</span>
+                        </div>
                         <button
-                          onClick={() => downloadDocument(getDocHtml("academic_progress"), "Physics_Revision_Pack.html")}
-                          className="px-3 py-1 bg-slate-900 text-white font-bold rounded text-xs cursor-pointer"
+                          onClick={() => downloadDocument(getDocHtml("academic_progress"), "Physics_Mechanics_MasterPack.html")}
+                          className="px-3.5 py-1.5 bg-slate-900 hover:bg-black text-white font-bold rounded text-xs cursor-pointer"
+                        >
+                          Download Pack
+                        </button>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-200">
+                        <div>
+                          <strong className="text-slate-900 block">Life Sciences Paper 2 (Genetics, DNA &amp; Evolution)</strong>
+                          <span className="text-[11px] text-slate-500">Monohybrid crosses, sex-linked inheritance &amp; phylogenetic trees practice kit</span>
+                        </div>
+                        <button
+                          onClick={() => downloadDocument(getDocHtml("academic_progress"), "LifeSciences_Genetics_Pack.html")}
+                          className="px-3.5 py-1.5 bg-slate-900 hover:bg-black text-white font-bold rounded text-xs cursor-pointer"
                         >
                           Download Pack
                         </button>
@@ -2069,6 +2639,7 @@ export default function Dashboard() {
                   </div>
                 )}
 
+                {/* Sub-tab 4: Progress Report */}
                 {activeSubPage === "progress_report" && (
                   <div className="space-y-4">
                     <div className="flex justify-end gap-2">
@@ -2093,34 +2664,128 @@ export default function Dashboard() {
               </div>
             )}
 
+            {/* --- STUDENT: TIMETABLE (Responsive to Tutor Portal) --- */}
+            {!isTeacher && activeDepartment === "timetable" && (
+              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">Live Teaching Schedule</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">Live tutorials, exam workshops &amp; virtual meeting links scheduled by your educator.</p>
+                  </div>
+                  <span className="px-2.5 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold">
+                    {teachingSlots.length} Active Sessions
+                  </span>
+                </div>
+
+                {teachingSlots.length === 0 ? (
+                  <div className="py-8 text-center text-xs text-slate-400">
+                    No active teaching sessions scheduled by your tutor. Check announcements for upcoming dates.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {teachingSlots.map((slot) => (
+                      <div
+                        key={slot.id}
+                        className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-[#b82e2e]/30 transition-colors"
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-0.5 rounded text-[10.5px] font-mono font-bold bg-slate-200 text-slate-800">
+                              {slot.dayName}, {slot.date}
+                            </span>
+                            <span className="px-2 py-0.5 rounded text-[10.5px] font-bold bg-red-50 text-[#b82e2e] border border-red-100">
+                              {slot.time}
+                            </span>
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                              {slot.provider}
+                            </span>
+                          </div>
+                          <h4 className="text-sm font-bold text-slate-900">{slot.topic}</h4>
+                          <p className="text-[11px] text-slate-500">Tutor: Lead Educator (Mathematics &amp; Science)</p>
+                        </div>
+                        <div>
+                          <a
+                            href={slot.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg shadow-xs transition-colors cursor-pointer"
+                          >
+                            <span>Join Live Class</span>
+                            <ExternalLinkIcon className="w-3.5 h-3.5" />
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* --- STUDENT: ANNOUNCEMENTS (Responsive to Tutor Portal) --- */}
+            {!isTeacher && activeDepartment === "announcements" && (
+              <div className="space-y-4 max-w-2xl">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Institutional Notices &amp; Circulars</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">Real-time circulars broadcast by your Lead Educator.</p>
+                </div>
+
+                {announcementsHistory.length === 0 ? (
+                  <div className="p-6 bg-white border border-slate-200 rounded-xl text-center text-xs text-slate-400">
+                    No announcements published yet.
+                  </div>
+                ) : (
+                  announcementsHistory.map((item) => (
+                    <div
+                      key={item.id}
+                      className="border-l-4 border-[#b82e2e] bg-white border border-slate-200 rounded-r-xl p-5 shadow-sm space-y-2"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                        <span className="text-[10px] font-bold text-[#b82e2e] uppercase tracking-wider">
+                          LogTraq Academic Notice
+                        </span>
+                        <span className="text-[11px] text-slate-400 font-mono">{item.date}</span>
+                      </div>
+                      <h4 className="text-sm font-bold text-slate-900">{item.title}</h4>
+                      <p className="text-xs text-slate-600 leading-relaxed">{item.message}</p>
+                      <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400">
+                        <span>Posted by Lead Educator &bull; Delivered to Learner Portal</span>
+                        <span className="text-emerald-700 font-semibold">&bull; Verified</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+
             {/* --- STUDENT: STUDENT LIFE --- */}
             {!isTeacher && activeDepartment === "student-life" && (
               <div className="space-y-6">
                 {activeSubPage === "digital_card" && (
                   <div className="border border-slate-200 rounded-2xl p-6 bg-white max-w-sm space-y-4 shadow-md">
                     <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                      <Image src="/assets/logo.png" alt="StudyHub" width={85} height={28} className="object-contain" />
+                      <Image src="/assets/logtraq-logo-clean.png" alt="LogTraq" width={100} height={32} className="object-contain" />
                       <span className="text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded">
                         CLEARED 2026
                       </span>
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="w-16 h-16 rounded-full bg-[#b82e2e] text-white flex items-center justify-center font-bold text-lg shadow-sm">
-                        {getInitials(profile.full_name)}
+                        {getInitials(profile?.full_name || "Olwethuthando Zuma")}
                       </div>
                       <div>
-                        <h3 className="text-sm font-bold text-slate-900">{profile.full_name}</h3>
-                        <p className="text-xs text-slate-500 font-mono font-bold text-[#b82e2e]">STU-001</p>
-                        <p className="text-[11px] text-slate-400">Grade 12 STEM Academic</p>
+                        <h3 className="text-sm font-bold text-slate-900">{profile?.full_name || "Olwethuthando Zuma"}</h3>
+                        <p className="text-xs font-mono font-bold text-[#b82e2e]">STU-001</p>
+                        <p className="text-[11px] text-slate-500 font-medium">Grade 12 DBE/IEB Candidate</p>
+                        <p className="text-[10px] text-slate-400">LogTraq STEM Tutoring Academy</p>
                       </div>
                     </div>
                     <div className="border-t border-dashed border-slate-200 pt-3 flex justify-between items-center text-[10px] text-slate-400 font-mono">
-                      <span>VERIFIED ID</span>
+                      <span>VERIFIED SCHOLAR</span>
                       <span>VALID: DEC 2026</span>
                     </div>
                     <button
                       onClick={() => printDocument(getDocHtml("enrolment_confirmation"))}
-                      className="w-full py-2 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-lg cursor-pointer"
+                      className="w-full py-2.5 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-lg cursor-pointer transition-colors"
                     >
                       Print Official Student Credential
                     </button>
@@ -2150,59 +2815,16 @@ export default function Dashboard() {
                 )}
 
                 {activeSubPage === "campus_services" && (
-                  <div className="bg-white border border-slate-200 rounded-xl p-6 space-y-3 shadow-sm text-xs">
-                    <h3 className="text-sm font-bold text-slate-900">Student Academic Support Services</h3>
-                    <p className="text-slate-500">Contact educational counselors, topic tutors, and the admissions desk:</p>
-                    <div className="p-3 bg-slate-50 rounded-lg space-y-1">
-                      <p><strong>Student Support Centre (SSC):</strong> ssc@studyhub.logtraq.co.za</p>
-                      <p><strong>Helpline:</strong> +27 (0)12 420 3111</p>
-                      <p><strong>Operating Hours:</strong> Mon &ndash; Fri: 08:00 &ndash; 16:30</p>
+                  <div className="bg-white border border-slate-200 rounded-xl p-6 space-y-3 shadow-sm text-xs max-w-lg">
+                    <h3 className="text-sm font-bold text-slate-900">Learner Academic Support Desk</h3>
+                    <p className="text-slate-500">Contact educational advisors, topic tutors, and student support:</p>
+                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-2">
+                      <p><strong>WhatsApp &amp; Tutor Helpline:</strong> <span className="font-mono text-[#b82e2e] font-bold">+27 82 123 4567</span></p>
+                      <p><strong>Academic Email Support:</strong> <span className="font-mono text-slate-800">support@logtraq.co.za</span></p>
+                      <p><strong>Operating Hours:</strong> Mon &ndash; Sat: 08:00 &ndash; 18:00</p>
                     </div>
                   </div>
                 )}
-              </div>
-            )}
-
-            {/* --- STUDENT: TIMETABLE --- */}
-            {!isTeacher && activeDepartment === "timetable" && (
-              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
-                <h3 className="text-sm font-bold text-slate-900">Weekly Lecture &amp; Tutorial Schedule</h3>
-                <table className="w-full text-xs text-left border border-slate-200 rounded-lg overflow-hidden">
-                  <thead className="bg-slate-50 border-b border-slate-200 font-semibold text-slate-700">
-                    <tr>
-                      <th className="p-3">Day</th>
-                      <th className="p-3">Time</th>
-                      <th className="p-3">Subject</th>
-                      <th className="p-3">Venue / Link</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    <tr>
-                      <td className="p-3 font-medium">Monday</td>
-                      <td className="p-3">15:30 &ndash; 17:00</td>
-                      <td className="p-3 font-bold text-[#b82e2e]">Mathematics Grade 12</td>
-                      <td className="p-3 font-mono text-slate-600">Lecture Hall A / Zoom Live</td>
-                    </tr>
-                    <tr>
-                      <td className="p-3 font-medium">Wednesday</td>
-                      <td className="p-3">15:30 &ndash; 17:00</td>
-                      <td className="p-3 font-bold text-[#b82e2e]">Physical Sciences Grade 12</td>
-                      <td className="p-3 font-mono text-slate-600">Science Lab 2 / Zoom Live</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {/* --- STUDENT: ANNOUNCEMENTS --- */}
-            {!isTeacher && activeDepartment === "announcements" && (
-              <div className="space-y-3 max-w-xl">
-                <div className="border-l-4 border-[#b82e2e] bg-white border border-slate-200 rounded-r-xl p-5 shadow-sm space-y-1">
-                  <span className="text-[10px] font-bold text-[#b82e2e] uppercase tracking-wider">Academic Notice</span>
-                  <h3 className="text-sm font-bold text-slate-900">Term 3 Revision Sessions Schedule</h3>
-                  <p className="text-xs text-slate-600">All Grade 12 candidates are required to attend the mock exam workshop this Saturday.</p>
-                  <p className="text-[10px] text-slate-400 mt-2">Posted by Lead Educator &bull; 2 days ago</p>
-                </div>
               </div>
             )}
 
@@ -3524,419 +4146,7 @@ export default function Dashboard() {
                 )}
 
                 {/* 3. Study Hub Demo (Moodle Build Demo with Video, Syllabus, Notes, and 10-Question Quiz) */}
-                {activeSubPage === "studyhub_demo" && (() => {
-                  const currentQ = EXPONENTIAL_QUIZ_DATA[activeQuizIdx];
-                  const totalQuizMarks = EXPONENTIAL_QUIZ_DATA.reduce((acc, q) => acc + q.marks, 0);
-
-                  const getQuizSidebarColor = (idx: number, status: string, isActive: boolean) => {
-                    let base = "bg-white text-slate-700 hover:bg-slate-50 border-slate-200";
-                    if (isQuizSubmitted) {
-                      const sel = quizSelectedAnswers[idx] || [];
-                      const isCorrect = sel.length === 1 && sel[0] === EXPONENTIAL_QUIZ_DATA[idx].correctAnswers[0];
-                      base = isCorrect
-                        ? "bg-emerald-100 text-emerald-800 border-emerald-300 font-bold"
-                        : "bg-red-100 text-red-800 border-red-300 font-bold";
-                    } else {
-                      if (status === "completed") {
-                        base = "bg-emerald-50 text-emerald-700 border-emerald-300 font-bold";
-                      } else if (status === "not-sure") {
-                        base = "bg-amber-50 text-amber-800 border-amber-300 font-bold";
-                      }
-                    }
-
-                    if (isActive) {
-                      return `${base} ring-2 ring-[#b82e2e] ring-offset-1 font-black`;
-                    }
-                    return base;
-                  };
-
-                  return (
-                    <div className="space-y-6">
-                      {/* Top Classroom Header Banner */}
-                      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-[#1e293b] rounded-2xl p-6 text-white shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-red-500/20 text-red-300 border border-red-500/30">
-                              Study Hub Demo Mode
-                            </span>
-                            <span className="text-xs text-slate-400">Grade 12 Mathematics (DBE / IEB Paper 1)</span>
-                          </div>
-                          <h2 className="text-xl font-black tracking-tight text-white">
-                            Advanced Exponential Relations
-                          </h2>
-                          <p className="text-xs text-slate-300 max-w-2xl">
-                            Topic: Exponential Proofs and Variable Manipulation. Video masterclass, comprehensive theory notes, logic diagrams, and 10-question mastery assessment.
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="px-3 py-1.5 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 rounded-xl text-xs font-bold">
-                            Active Interactive Module
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Main Two-Column Layout: Left Syllabus Topics, Right Active Lesson Content */}
-                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                        {/* Left: Grade 12 Syllabus Topic Roster */}
-                        <div className="lg:col-span-4 space-y-4">
-                          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-3">
-                            <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
-                              Grade 12 Mathematics Syllabus
-                            </h3>
-
-                            <div className="space-y-2 text-xs">
-                              {/* Active Topic */}
-                              <div className="p-3 bg-red-50 border-2 border-[#b82e2e] rounded-xl space-y-1">
-                                <div className="flex items-center justify-between">
-                                  <span className="font-extrabold text-[#b82e2e] text-[11px] uppercase">
-                                    Topic 1 &bull; Active
-                                  </span>
-                                  <span className="px-2 py-0.5 rounded text-[9.5px] font-bold bg-emerald-100 text-emerald-800">
-                                    AVAILABLE
-                                  </span>
-                                </div>
-                                <p className="font-bold text-slate-900 text-xs">
-                                  Advanced Exponential Relations (Proofs &amp; Manipulation)
-                                </p>
-                                <p className="text-[10px] text-slate-500">Video Masterclass &bull; Mastery Quiz (10 Qs)</p>
-                              </div>
-
-                              {/* Locked Syllabus Topics */}
-                              {[
-                                "Functions & Inverse Functions (Hyperbola, Parabola, Exponential)",
-                                "Differential Calculus & Polynomial Factor Theorem",
-                                "Sequences & Series (Arithmetic, Geometric, Sigma)",
-                                "Financial Mathematics (Annuities, Sinking Funds)",
-                                "Analytical Geometry & Circles (DBE Paper 2)",
-                                "Trigonometry (Compound & Double Angles, Identities)",
-                                "Euclidean Geometry & Proportionality Theorem",
-                                "Statistics & Bivariate Regression Analysis",
-                                "Probability & Fundamental Counting Principles",
-                              ].map((lockedTopic, i) => (
-                                <div
-                                  key={i}
-                                  className="p-3 bg-slate-50/70 border border-slate-200/80 rounded-xl opacity-60 flex items-center justify-between cursor-not-allowed"
-                                >
-                                  <div className="space-y-0.5 pr-2">
-                                    <p className="font-semibold text-slate-700 text-[11px]">{lockedTopic}</p>
-                                    <p className="text-[9.5px] text-slate-400">DBE &amp; IEB Core Syllabus</p>
-                                  </div>
-                                  <span className="px-2 py-0.5 bg-slate-200 text-slate-600 rounded text-[9px] font-bold uppercase tracking-wider shrink-0">
-                                    DEMO LOCKED
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Right: Active Lesson Video, Notes & Mastery Quiz */}
-                        <div className="lg:col-span-8 space-y-6">
-                          {/* Video Masterclass Player */}
-                          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
-                            <div className="flex items-center justify-between">
-                              <h3 className="text-sm font-bold text-slate-900">
-                                Video Masterclass: Exponential Proofs &amp; Variable Manipulation
-                              </h3>
-                              <span className="text-[11px] text-slate-500 font-mono">DBE Paper 1 Grade 12</span>
-                            </div>
-
-                            <div className="rounded-xl overflow-hidden bg-black shadow-inner">
-                              <video
-                                controls
-                                className="w-full max-h-[420px] object-contain"
-                                src="/assets/exponential-relations-lesson.mp4"
-                              >
-                                Your browser does not support the video tag.
-                              </video>
-                            </div>
-                            <p className="text-xs text-slate-500">
-                              Watch the step-by-step breakdown of exponential laws applied in reverse to isolate variables and prove non-standard equations.
-                            </p>
-                          </div>
-
-                          {/* Comprehensive Course Notes */}
-                          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-6 text-xs text-slate-700">
-                            <div>
-                              <h3 className="text-base font-black text-slate-900 tracking-tight">
-                                Course Notes: Advanced Exponential Relations
-                              </h3>
-                              <p className="text-xs text-slate-500 mt-0.5">
-                                Topic: Exponential Proofs and Variable Manipulation (Grade 12 CAPS / IEB)
-                              </p>
-                            </div>
-
-                            {/* 1. Fundamentals & Laws */}
-                            <div className="space-y-3">
-                              <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#b82e2e]">
-                                1. Fundamentals &amp; Laws
-                              </h4>
-                              <p>
-                                Before we tackle complex proofs, we must master the foundational rules of exponents. In Grade 12, we often use these laws &quot;backward&quot; or to link different variables together.
-                              </p>
-
-                              <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
-                                <div>
-                                  <strong className="text-slate-900">&bull; Base:</strong> The number being multiplied (e.g., in <span className="font-mono">k^x</span>, <span className="font-mono">k</span> is the base).
-                                </div>
-                                <div>
-                                  <strong className="text-slate-900">&bull; Exponent (Index):</strong> The power to which the base is raised (e.g., in <span className="font-mono">k^x</span>, <span className="font-mono">x</span> is the exponent).
-                                </div>
-                              </div>
-
-                              <div className="overflow-x-auto">
-                                <table className="w-full text-xs text-left border-collapse border border-slate-200">
-                                  <thead className="bg-slate-50 text-slate-900 font-bold">
-                                    <tr>
-                                      <th className="p-2.5 border border-slate-200">Law Name</th>
-                                      <th className="p-2.5 border border-slate-200 font-mono">Formula</th>
-                                      <th className="p-2.5 border border-slate-200">Verbal Rule</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    <tr>
-                                      <td className="p-2.5 border border-slate-200 font-bold">Product Law</td>
-                                      <td className="p-2.5 border border-slate-200 font-mono text-[#b82e2e]">a^m · a^n = a^(m+n)</td>
-                                      <td className="p-2.5 border border-slate-200">When multiplying the same bases, <strong>add</strong> the exponents.</td>
-                                    </tr>
-                                    <tr>
-                                      <td className="p-2.5 border border-slate-200 font-bold">Quotient Law</td>
-                                      <td className="p-2.5 border border-slate-200 font-mono text-[#b82e2e]">a^m ÷ a^n = a^(m-n)</td>
-                                      <td className="p-2.5 border border-slate-200">When dividing the same bases, <strong>subtract</strong> the exponents.</td>
-                                    </tr>
-                                    <tr>
-                                      <td className="p-2.5 border border-slate-200 font-bold">Power Law</td>
-                                      <td className="p-2.5 border border-slate-200 font-mono text-[#b82e2e]">(a^m)^n = a^(m · n)</td>
-                                      <td className="p-2.5 border border-slate-200">A power raised to another power means <strong>multiply</strong> exponents.</td>
-                                    </tr>
-                                  </tbody>
-                                </table>
-                              </div>
-                            </div>
-
-                            {/* 2. Concept Logic Diagram */}
-                            <div className="space-y-3">
-                              <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#b82e2e]">
-                                2. Concept Logic Diagram
-                              </h4>
-                              <p>
-                                This diagram illustrates the &quot;bridge&quot; between different variables using a common base (k):
-                              </p>
-
-                              <div className="p-5 bg-slate-50 border border-slate-200 rounded-xl space-y-3 text-center">
-                                <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
-                                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl">
-                                    <p className="font-bold text-blue-900 text-xs">Branch X (Given)</p>
-                                    <p className="font-mono text-[#b82e2e] font-bold text-xs mt-1">k^(1/x) = 3</p>
-                                  </div>
-                                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
-                                    <p className="font-bold text-emerald-900 text-xs">Branch Y (Given)</p>
-                                    <p className="font-mono text-[#b82e2e] font-bold text-xs mt-1">k^(1/y) = 4</p>
-                                  </div>
-                                </div>
-
-                                <div className="text-slate-400 text-base">&darr;</div>
-
-                                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl max-w-md mx-auto">
-                                  <p className="font-bold text-amber-900 text-xs">The &quot;Same-Base&quot; Law</p>
-                                  <p className="font-mono text-slate-800 font-bold text-xs mt-1">
-                                    k^(1/x) · k^(1/y) = k^(1/x + 1/y)
-                                  </p>
-                                </div>
-
-                                <div className="text-slate-400 text-base">&darr;</div>
-
-                                <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl max-w-md mx-auto">
-                                  <p className="font-bold text-purple-900 text-xs">Substitution &amp; Final Result</p>
-                                  <p className="font-mono text-slate-800 text-xs mt-1">
-                                    3 · 4 = 12 &bull; Since 12 = k^(1/w) ⟹ 1/w = 1/x + 1/y
-                                  </p>
-                                  <p className="font-mono text-[#b82e2e] font-extrabold text-sm mt-1">
-                                    w = (xy) / (x + y)
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* 3. Worked Example Proof */}
-                            <div className="space-y-3">
-                              <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#b82e2e]">
-                                3. Worked Example (The Proof)
-                              </h4>
-                              <div className="p-4 bg-slate-900 text-white rounded-xl space-y-2 font-mono text-xs">
-                                <p className="text-amber-300 font-bold">
-                                  Problem: Given k^(1/x) = 3, k^(1/y) = 4, and k^(1/w) = 12. Prove that w = (xy)/(x+y).
-                                </p>
-                                <div className="space-y-1 text-slate-200 pt-1">
-                                  <p><strong>Step 1:</strong> Identify numerical relationship: 3 × 4 = 12</p>
-                                  <p><strong>Step 2:</strong> Substitute exponential forms: k^(1/x) · k^(1/y) = k^(1/w)</p>
-                                  <p><strong>Step 3:</strong> Apply Product Law: k^(1/x + 1/y) = k^(1/w)</p>
-                                  <p><strong>Step 4:</strong> Drop the bases: 1/x + 1/y = 1/w</p>
-                                  <p><strong>Step 5:</strong> Find common denominator: (y + x)/(xy) = 1/w ⟹ <strong>w = (xy)/(x+y) (Q.E.D.)</strong></p>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* 4. Mastery Quiz (Exact Architecture from src/archive/quiz/page.tsx) */}
-                          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-6">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-                              <div>
-                                <h3 className="text-base font-black text-slate-900 tracking-tight">
-                                  4. Mastery Quiz: 10 Questions
-                                </h3>
-                                <p className="text-xs text-slate-500 mt-0.5">
-                                  Test your understanding from basic exponential laws to complex matric proofs.
-                                </p>
-                              </div>
-                              {isQuizSubmitted ? (
-                                <div className="flex items-center gap-2">
-                                  <span className="px-3 py-1.5 bg-emerald-50 text-emerald-700 font-extrabold text-xs rounded-xl border border-emerald-200">
-                                    Score: {quizScore} / {totalQuizMarks} marks ({Math.round((quizScore / totalQuizMarks) * 100)}%)
-                                  </span>
-                                  <button
-                                    onClick={handleQuizRetake}
-                                    className="px-3 py-1.5 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
-                                  >
-                                    Retake Quiz
-                                  </button>
-                                </div>
-                              ) : (
-                                <button
-                                  onClick={handleQuizSubmit}
-                                  className="px-4 py-2 bg-[#b82e2e] hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
-                                >
-                                  Submit Quiz Assessment
-                                </button>
-                              )}
-                            </div>
-
-                            {/* Top Stepper Button Pills (1 to 10) */}
-                            <div className="flex flex-wrap gap-1.5 pb-2">
-                              {EXPONENTIAL_QUIZ_DATA.map((_, idx) => (
-                                <button
-                                  key={idx}
-                                  onClick={() => setActiveQuizIdx(idx)}
-                                  className={`w-9 h-9 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center ${getQuizSidebarColor(
-                                    idx,
-                                    quizStatuses[idx],
-                                    activeQuizIdx === idx
-                                  )}`}
-                                >
-                                  {idx + 1}
-                                </button>
-                              ))}
-                            </div>
-
-                            {/* Active Question Display Card */}
-                            <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-slate-200 text-slate-700">
-                                    Question {activeQuizIdx + 1} of 10
-                                  </span>
-                                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-blue-50 text-blue-700 border border-blue-200">
-                                    {currentQ.intensity} Intensity
-                                  </span>
-                                </div>
-                                <span className="font-extrabold text-xs text-[#b82e2e]">
-                                  {currentQ.marks} Marks
-                                </span>
-                              </div>
-
-                              <p className="font-bold text-slate-900 text-sm sm:text-base leading-snug">
-                                {currentQ.question}
-                              </p>
-
-                              {/* Options */}
-                              <div className="space-y-2.5 pt-1">
-                                {currentQ.options.map((opt, oIdx) => {
-                                  const isSelected = (quizSelectedAnswers[activeQuizIdx] || []).includes(oIdx);
-                                  const isCorrect = currentQ.correctAnswers.includes(oIdx);
-
-                                  let optColor = "bg-white border-slate-200 text-slate-800 hover:border-slate-300";
-                                  if (isQuizSubmitted) {
-                                    if (isCorrect) {
-                                      optColor = "bg-emerald-50 border-emerald-400 text-emerald-900 font-bold";
-                                    } else if (isSelected && !isCorrect) {
-                                      optColor = "bg-red-50 border-red-300 text-red-900";
-                                    }
-                                  } else if (isSelected) {
-                                    optColor = "bg-red-50 border-[#b82e2e] text-[#b82e2e] font-bold";
-                                  }
-
-                                  return (
-                                    <button
-                                      key={oIdx}
-                                      onClick={() => handleQuizSelectOption(activeQuizIdx, oIdx)}
-                                      disabled={isQuizSubmitted}
-                                      className={`w-full text-left p-3.5 rounded-xl border text-xs flex items-center gap-3 transition-colors cursor-pointer ${optColor}`}
-                                    >
-                                      <div
-                                        className={`w-5 h-5 rounded-full border flex items-center justify-center text-[10px] shrink-0 ${
-                                          isSelected
-                                            ? "border-[#b82e2e] bg-[#b82e2e] text-white"
-                                            : "border-slate-300"
-                                        }`}
-                                      >
-                                        {isSelected ? "✓" : ""}
-                                      </div>
-                                      <span className="font-medium">{opt}</span>
-                                    </button>
-                                  );
-                                })}
-                              </div>
-
-                              {/* Actions Bar */}
-                              <div className="flex items-center justify-between pt-3 border-t border-slate-200 text-xs">
-                                <button
-                                  onClick={() => setActiveQuizIdx(Math.max(0, activeQuizIdx - 1))}
-                                  disabled={activeQuizIdx === 0}
-                                  className="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-100 disabled:opacity-30 cursor-pointer font-bold"
-                                >
-                                  &larr; Previous
-                                </button>
-
-                                {!isQuizSubmitted && (
-                                  <button
-                                    onClick={handleQuizMarkNotSure}
-                                    className="px-3 py-1.5 text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg font-bold cursor-pointer"
-                                  >
-                                    Mark as Not Sure
-                                  </button>
-                                )}
-
-                                <button
-                                  onClick={() =>
-                                    setActiveQuizIdx(
-                                      Math.min(EXPONENTIAL_QUIZ_DATA.length - 1, activeQuizIdx + 1)
-                                    )
-                                  }
-                                  disabled={activeQuizIdx === EXPONENTIAL_QUIZ_DATA.length - 1}
-                                  className="px-4 py-1.5 bg-slate-900 text-white rounded-lg hover:bg-black disabled:opacity-30 cursor-pointer font-bold"
-                                >
-                                  Next &rarr;
-                                </button>
-                              </div>
-
-                              {/* Explanations Accordion (Shows in review mode or upon submission) */}
-                              {isQuizSubmitted && (
-                                <div className="mt-4 p-4 bg-emerald-50/70 border border-emerald-200 rounded-xl space-y-1.5 text-xs">
-                                  <div className="flex items-center gap-1.5 font-bold text-emerald-900">
-                                    <span>Explanation &amp; Mathematical Proof:</span>
-                                  </div>
-                                  <p className="text-emerald-950 font-sans leading-relaxed">
-                                    {currentQ.explanation}
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()}
+                {activeSubPage === "studyhub_demo" && renderStudyHubDemo()}
               </div>
             )}
 
