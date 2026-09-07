@@ -281,6 +281,16 @@ function ExternalLinkIcon({ className = "w-4 h-4" }: { className?: string }) {
   );
 }
 
+function LogoutIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </svg>
+  );
+}
+
 // --- Department Navigation Definitions (Static Module-Level) ---
 const TEACHER_TILES = [
   { id: "students", title: "Students", icon: StudentsIllustrativeIcon, subtitle: "Roster, enrolments & import" },
@@ -698,12 +708,16 @@ export default function Dashboard() {
       setStatusMessage(null);
       setShowNotifications(false);
 
-      if (typeof window !== "undefined") {
-        let targetUrl = "/dashboard";
-        if (deptId !== "dashboard") {
-          targetUrl = `/dashboard?dept=${encodeURIComponent(deptId)}&tab=${encodeURIComponent(resolvedSub)}`;
+      try {
+        if (typeof window !== "undefined") {
+          let targetUrl = "/dashboard";
+          if (deptId !== "dashboard") {
+            targetUrl = `/dashboard?dept=${encodeURIComponent(deptId)}&tab=${encodeURIComponent(resolvedSub)}`;
+          }
+          window.history.pushState({ dept: deptId, subPage: resolvedSub }, "", targetUrl);
         }
-        window.history.pushState({ dept: deptId, subPage: resolvedSub }, "", targetUrl);
+      } catch (err) {
+        console.warn("History push error:", err);
       }
     },
     [isTeacher]
@@ -739,10 +753,11 @@ export default function Dashboard() {
         setActiveDepartment(state.dept);
         setActiveSubPage(state.subPage || "");
       } else {
-        // User backed up all the way to dashboard base: keep safely on Launchpad
-        setActiveDepartment("dashboard");
-        setActiveSubPage("");
-        window.history.pushState({ dept: "dashboard", subPage: "" }, "", "/dashboard");
+        const searchParams = new URLSearchParams(window.location.search);
+        const dept = searchParams.get("dept") || "dashboard";
+        const tab = searchParams.get("tab") || "";
+        setActiveDepartment(dept);
+        setActiveSubPage(tab);
       }
 
       setStatusMessage(null);
@@ -761,8 +776,14 @@ export default function Dashboard() {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.replace("/home");
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.warn("Sign out error:", err);
+    }
+    if (typeof window !== "undefined") {
+      window.location.replace("/home");
+    }
   };
 
   const handleMarkAllNotificationsRead = () => {
@@ -1028,6 +1049,16 @@ export default function Dashboard() {
               </div>
             )}
           </div>
+
+          {/* Log Out Action Button */}
+          <button
+            onClick={handleLogout}
+            aria-label="Log Out"
+            className="p-2 rounded-full transition-colors relative cursor-pointer text-slate-600 hover:text-[#b82e2e] hover:bg-red-50"
+            title="Log Out"
+          >
+            <LogoutIcon className="w-5 h-5" />
+          </button>
 
           <div className="h-4 w-[1px] bg-slate-200"></div>
 
