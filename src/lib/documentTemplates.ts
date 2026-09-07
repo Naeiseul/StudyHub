@@ -1,4 +1,4 @@
-﻿/**
+/**
  * StudyHub Institutional Document Generation Templates
  * Automates generation of official institutional documents populated with student records.
  * Faithfully mirrors University of Pretoria (UP) Student Account Invoices and institutional letters.
@@ -68,9 +68,9 @@ export const DOCUMENT_TEMPLATES: DocTemplateInfo[] = [
   },
   {
     id: "student_invoice",
-    title: "Invoice: Student Account (UP Official Style)",
+    title: "Invoice: High School Student Account",
     category: "Financial Documents",
-    description: "Official University of Pretoria (UP) style chronological student account invoice and fee ledger.",
+    description: "Official LogTraq high school tutoring chronological tuition invoice and running fee ledger.",
   },
 ];
 
@@ -382,153 +382,151 @@ export function generateDocumentHtml(
       `;
 
     case "student_invoice": {
-      const logoSrc = institution.logoUrl || "/assets/logo.png";
-      const studentProgramme = student.programme || "12134002  BSc in Computer Science";
-      const studentAddr = student.address || "12 Hatfield Boulevard, Pretoria, Gauteng, 0028";
+      const logoSrc = "/assets/logtraq-logo-clean.png";
+      const logoMark = "/assets/logtraq-logo-mark.png";
+      const studentAddr = student.address || "South Africa (High School FET Phase)";
+      const isPaid = (student.paidAmount !== undefined && student.totalDebt !== undefined)
+        ? student.paidAmount >= student.totalDebt
+        : (student.studentId === "STU-382910" || student.studentId === "STU-592810" ? false : true);
 
-      // Ledger items modeled directly from official University of Pretoria Student Account Invoice
-      const ledgerItems = [
-        { date: "2026/01/01", desc: "Balance Brought Forward", ref: "", amount: null, bal: -11000.00 },
-        { date: "2026/01/08", desc: "First Payment 2026", ref: "", amount: 11000.00, bal: 0.00 },
-        { date: "2026/01/09", desc: "ABSA Tuition Payment", ref: "BANK STMT SEQ 2338467", amount: -29000.00, bal: -29000.00 },
-        { date: "2026/01/27", desc: "WTW114 Tuition Fees", ref: "", amount: 7790.00, bal: -21210.00 },
-        { date: "2026/01/27", desc: "WTW114 Copyright & Library", ref: "", amount: 116.00, bal: -21094.00 },
-        { date: "2026/01/27", desc: "WTW114 E-Learning Package", ref: "", amount: 452.00, bal: -20642.00 },
-        { date: "2026/01/27", desc: "WTW115 Tuition Fees", ref: "", amount: 4000.00, bal: -16642.00 },
-        { date: "2026/01/27", desc: "WTW148 Tuition Fees", ref: "", amount: 4050.00, bal: -12592.00 },
-        { date: "2026/01/27", desc: "WTW148 Copyright & Library", ref: "", amount: 116.00, bal: -12476.00 },
-        { date: "2026/01/27", desc: "COS110 Tuition Fees", ref: "", amount: 6680.00, bal: -5796.00 },
-        { date: "2026/01/27", desc: "COS110 Copyright & Library", ref: "", amount: 116.00, bal: -5680.00 },
-        { date: "2026/01/27", desc: "COS110 Facility Usage", ref: "", amount: 1270.00, bal: -4410.00 },
-        { date: "2026/01/27", desc: "COS110 Study Material", ref: "", amount: 50.00, bal: -4360.00 },
-        { date: "2026/01/27", desc: "COS132 Tuition Fees", ref: "", amount: 6680.00, bal: 2320.00 },
-        { date: "2026/01/27", desc: "COS132 Copyright & Library", ref: "", amount: 116.00, bal: 2436.00 },
-        { date: "2026/01/27", desc: "COS132 Facility Usage", ref: "", amount: 1270.00, bal: 3706.00 },
-        { date: "2026/01/27", desc: "COS132 Study Material", ref: "", amount: 50.00, bal: 3756.00 },
-        { date: "2026/01/27", desc: "COS151 Tuition Fees", ref: "", amount: 3660.00, bal: 7416.00 },
-        { date: "2026/01/27", desc: "COS151 Copyright & Library", ref: "", amount: 116.00, bal: 7532.00 },
-        { date: "2026/01/27", desc: "COS151 Facility Usage", ref: "", amount: 640.00, bal: 8172.00 },
-        { date: "2026/01/27", desc: "COS151 Study Material", ref: "", amount: 50.00, bal: 8222.00 },
-        { date: "2026/01/27", desc: "AIM111 Tuition Fees", ref: "", amount: 5620.00, bal: 13842.00 },
-        { date: "2026/01/27", desc: "Education Technology Software", ref: "", amount: 390.00, bal: 14232.00 },
-        { date: "2026/01/27", desc: "Security Levy", ref: "", amount: 105.00, bal: 14337.00 },
-        { date: "2026/04/23", desc: "ABSA Tuition Payment", ref: "BANK STMT SEQ 2378897", amount: -5700.00, bal: 8637.00 },
-        { date: "2026/04/23", desc: "ABSA Tuition Payment", ref: "BANK STMT SEQ 2378988", amount: -7000.00, bal: 1637.00 },
-        { date: "2026/07/22", desc: "WTW148 Tuition Fees", ref: "", amount: 4050.00, bal: 5687.00 },
-        { date: "2026/07/24", desc: "ABSA Tuition Payment", ref: "BANK STMT SEQ 2407178", amount: -30000.00, bal: -24313.00 },
-        { date: "2026/07/29", desc: "ABSA Tuition Payment", ref: "BANK STMT SEQ 2409407", amount: -25200.00, bal: -49513.00 },
-        { date: "2026/08/01", desc: "Monthly Academic Assessment & Lab Fees", ref: "", amount: 50503.00, bal: 990.00 },
-      ];
+      const billedAmount = student.totalDebt || 4900.00;
+      const paidAmount = isPaid 
+        ? billedAmount 
+        : (student.studentId === "STU-382910" ? 3400.00 : 2900.00);
+      const balanceDue = billedAmount - paidAmount;
 
-      const finalBalance = ledgerItems[ledgerItems.length - 1].bal;
-      const finalDueStr = finalBalance >= 0 
-        ? `R ${finalBalance.toFixed(2)} Due By You`
-        : `R ${Math.abs(finalBalance).toFixed(2)} Credit In Your Favor`;
+      const invoiceTitle = isPaid
+        ? "OFFICIAL TUITION STATEMENT & RECEIPT (PAID IN FULL)"
+        : "OFFICIAL HIGH SCHOOL TUITION INVOICE (PAYMENT DUE)";
+
+      const finalStatusBanner = isPaid
+        ? `<div style="text-align: right; margin: 18px 0 16px; font-size: 14px; font-weight: 800; color: #047857; letter-spacing: 0.3px;">
+             R 0.00 Outstanding &bull; Account Paid in Full with Thanks
+           </div>`
+        : `<div style="text-align: right; margin: 18px 0 16px; font-size: 14px; font-weight: 800; color: #b82e2e; letter-spacing: 0.3px;">
+             R ${balanceDue.toFixed(2)} Due By Parent / Guardian
+           </div>`;
 
       return `
-        <div style="font-family: Arial, Helvetica, sans-serif; max-width: 820px; margin: 0 auto; color: #000000; background: #ffffff; padding: 30px 40px; box-sizing: border-box; line-height: 1.35;">
+        <div style="font-family: Arial, Helvetica, sans-serif; max-width: 820px; margin: 0 auto; color: #000000; background: #ffffff; padding: 32px 40px; box-sizing: border-box; line-height: 1.35; border: 1px solid #e2e8f0; border-radius: 8px;">
           
-          <!-- Top UP Header Lockup -->
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
-            <div style="font-size: 12px; color: #000000; line-height: 1.5; padding-top: 10px;">
-              <p style="margin: 0;">Student Number: <strong>${student.studentId}</strong></p>
-              <p style="margin: 2px 0 0;">Name: <strong>${student.name}</strong></p>
-              <p style="margin: 2px 0 0; color: #334155;">Address: ${studentAddr}</p>
+          <!-- Top LogTraq Header Lockup -->
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 22px; border-bottom: 2px solid #b82e2e; padding-bottom: 16px;">
+            <div style="font-size: 12px; color: #000000; line-height: 1.55;">
+              <p style="margin: 0; font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 700;">Student Information</p>
+              <p style="margin: 2px 0 0;">Student Number: <strong style="font-family: monospace; color: #b82e2e; font-size: 13px;">${student.studentId}</strong></p>
+              <p style="margin: 2px 0 0;">Learner Name: <strong style="color: #0f172a; font-size: 13px;">${student.name}</strong></p>
+              <p style="margin: 2px 0 0; color: #475569;">Curriculum Phase: <strong>Grade 12 (DBE / IEB Senior FET Phase)</strong></p>
+              <p style="margin: 2px 0 0; color: #64748b;">Residential Address: ${studentAddr}</p>
             </div>
             
-            <div style="text-align: center; display: flex; flex-direction: column; align-items: center;">
-              <img src="${logoSrc}" alt="StudyHub Logo" style="height: 58px; width: auto; max-width: 140px; object-fit: contain; margin-bottom: 6px;" />
-              <div style="font-size: 10px; font-weight: 800; letter-spacing: 0.8px; color: #000000; line-height: 1.25; text-transform: uppercase;">
-                UNIVERSITEIT VAN PRETORIA<br />
-                UNIVERSITY OF PRETORIA<br />
-                YUNIBESITHI YA PRETORIA
+            <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;">
+              <img src="${logoSrc}" alt="LogTraq Logo" style="height: 48px; width: auto; max-width: 170px; object-fit: contain; margin-bottom: 6px;" />
+              <div style="font-size: 11px; font-weight: 800; letter-spacing: 0.6px; color: #0f172a; line-height: 1.3; text-transform: uppercase;">
+                LOGTRAQ ACADEMIC TUTORING<br />
+                <span style="font-size: 10px; color: #b82e2e; font-weight: 700;">High School STEM Mastery &bull; StudyHub</span>
+              </div>
+              <p style="font-size: 10px; color: #64748b; margin: 3px 0 0;">Invoice Date: <strong>${accountAsAt}</strong></p>
+            </div>
+          </div>
+
+          <!-- Document Title -->
+          <div style="text-align: center; margin: 16px 0 14px;">
+            <h1 style="font-size: 16px; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: 0.3px; text-transform: uppercase;">
+              ${invoiceTitle}
+            </h1>
+            <p style="font-size: 11px; color: #64748b; margin: 3px 0 0;">Department of Mathematics, Physical Sciences &amp; High School Academic Excellence</p>
+          </div>
+
+          <!-- 7 High School Enrolled Subjects Roster -->
+          <div style="margin-bottom: 18px;">
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 14px;">
+              <p style="margin: 0 0 6px; font-size: 11px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.4px;">
+                Registered High School Subjects (7-Subject NSC Package):
+              </p>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; font-size: 10.5px; color: #334155;">
+                <div>&bull; <strong>Mathematics</strong> (Paper 1 &amp; Paper 2 - Calculus, Trigonometry, Euclidean)</div>
+                <div>&bull; <strong>Physical Sciences</strong> (Physics: Mechanics, Electricity; Chemistry)</div>
+                <div>&bull; <strong>Life Sciences</strong> (Genetics, DNA, Human Evolution)</div>
+                <div>&bull; <strong>English Home Language</strong> (HL Literature, Comprehension &amp; Essays)</div>
+                <div>&bull; <strong>First Additional Language</strong> (FAL IsiZulu / Afrikaans)</div>
+                <div>&bull; <strong>Life Orientation</strong> (LO Career &amp; Tertiary Readiness)</div>
+                <div>&bull; <strong>Accounting / Geography</strong> (Elective Academic Specialisation)</div>
+                <div style="color: #047857; font-weight: 700;">&bull; Status: Active Academic Enrolment 2026</div>
               </div>
             </div>
           </div>
 
-          <!-- Title: Invoice: Student Account -->
-          <div style="text-align: center; margin: 20px 0 16px;">
-            <h1 style="font-size: 17px; font-weight: 800; color: #000000; margin: 0; letter-spacing: 0.3px;">
-              Invoice: Student Account
-            </h1>
-          </div>
-
-          <!-- Programme & Date Details -->
-          <div style="font-size: 11px; margin-bottom: 12px;">
-            <div style="display: flex; padding: 3px 0;">
-              <span style="width: 130px; font-weight: 600;">Programme:</span>
-              <span style="font-weight: 700;">${studentProgramme}</span>
-            </div>
-            <div style="border-top: 1px solid #000000; margin: 5px 0;"></div>
-            <div style="display: flex; padding: 3px 0;">
-              <span style="width: 130px; font-weight: 600;">Account as at:</span>
-              <span>${accountAsAt}</span>
-            </div>
-            <div style="border-top: 1px solid #000000; margin: 5px 0 10px;"></div>
-          </div>
-
-          <!-- Main Ledger Table matching UP format -->
-          <table style="width: 100%; font-size: 10px; border-collapse: collapse; color: #000000;">
+          <!-- Chronological High School Tuition Ledger -->
+          <table style="width: 100%; font-size: 10.5px; border-collapse: collapse; color: #000000; margin-bottom: 12px;">
             <thead>
-              <tr style="border-top: 1px solid #000000; border-bottom: 1px solid #000000; background: #ffffff;">
-                <th style="padding: 3.5px 5px; text-align: left; font-weight: 700; width: 14%; border-right: 1px solid #cbd5e1;">Date</th>
-                <th style="padding: 3.5px 5px; text-align: left; font-weight: 700; width: 44%; border-right: 1px solid #cbd5e1;">Description</th>
-                <th style="padding: 3.5px 5px; text-align: left; font-weight: 700; width: 22%; border-right: 1px solid #cbd5e1;">Reference</th>
-                <th style="padding: 3.5px 5px; text-align: right; font-weight: 700; width: 10%; border-right: 1px solid #cbd5e1;">Amount</th>
-                <th style="padding: 3.5px 5px; text-align: right; font-weight: 700; width: 10%;">Balance</th>
+              <tr style="border-top: 1.5px solid #0f172a; border-bottom: 1.5px solid #0f172a; background: #f8fafc;">
+                <th style="padding: 6px 8px; text-align: left; font-weight: 700; width: 14%; border-right: 1px solid #cbd5e1;">Date</th>
+                <th style="padding: 6px 8px; text-align: left; font-weight: 700; width: 44%; border-right: 1px solid #cbd5e1;">Description</th>
+                <th style="padding: 6px 8px; text-align: left; font-weight: 700; width: 22%; border-right: 1px solid #cbd5e1;">Reference</th>
+                <th style="padding: 6px 8px; text-align: right; font-weight: 700; width: 10%; border-right: 1px solid #cbd5e1;">Amount</th>
+                <th style="padding: 6px 8px; text-align: right; font-weight: 700; width: 10%;">Balance</th>
               </tr>
             </thead>
             <tbody>
-              ${ledgerItems
-                .map(
-                  (item) => `
-                <tr style="border-bottom: 1px solid #e2e8f0;">
-                  <td style="padding: 2.5px 5px; border-right: 1px solid #cbd5e1; white-space: nowrap;">${item.date}</td>
-                  <td style="padding: 2.5px 5px; border-right: 1px solid #cbd5e1;">${item.desc}</td>
-                  <td style="padding: 2.5px 5px; border-right: 1px solid #cbd5e1; font-family: monospace; font-size: 9.5px;">${item.ref || ""}</td>
-                  <td style="padding: 2.5px 5px; text-align: right; border-right: 1px solid #cbd5e1; font-variant-numeric: tabular-nums;">
-                    ${item.amount !== null ? item.amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ""}
-                  </td>
-                  <td style="padding: 2.5px 5px; text-align: right; font-variant-numeric: tabular-nums;">
-                    ${item.bal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </td>
-                </tr>
-              `
-                )
-                .join("")}
+              <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 5px 8px; border-right: 1px solid #cbd5e1;">2026/01/15</td>
+                <td style="padding: 5px 8px; border-right: 1px solid #cbd5e1;">Term 1 High School Academic Tutoring (7 Subjects)</td>
+                <td style="padding: 5px 8px; border-right: 1px solid #cbd5e1; font-family: monospace; font-size: 9.5px;">INV-T1-TUITION</td>
+                <td style="padding: 5px 8px; text-align: right; border-right: 1px solid #cbd5e1;">3,500.00</td>
+                <td style="padding: 5px 8px; text-align: right;">3,500.00</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 5px 8px; border-right: 1px solid #cbd5e1;">2026/01/15</td>
+                <td style="padding: 5px 8px; border-right: 1px solid #cbd5e1;">Matric Exam Masterclass &amp; Past Exam Drill Packs</td>
+                <td style="padding: 5px 8px; border-right: 1px solid #cbd5e1; font-family: monospace; font-size: 9.5px;">EXAM-PACK-2026</td>
+                <td style="padding: 5px 8px; text-align: right; border-right: 1px solid #cbd5e1;">650.00</td>
+                <td style="padding: 5px 8px; text-align: right;">4,150.00</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 5px 8px; border-right: 1px solid #cbd5e1;">2026/01/15</td>
+                <td style="padding: 5px 8px; border-right: 1px solid #cbd5e1;">Weekly Interactive Tutorials &amp; StudyHub Quiz Mastery Access</td>
+                <td style="padding: 5px 8px; border-right: 1px solid #cbd5e1; font-family: monospace; font-size: 9.5px;">SH-PORTAL-LIC</td>
+                <td style="padding: 5px 8px; text-align: right; border-right: 1px solid #cbd5e1;">450.00</td>
+                <td style="padding: 5px 8px; text-align: right;">4,600.00</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 5px 8px; border-right: 1px solid #cbd5e1;">2026/01/15</td>
+                <td style="padding: 5px 8px; border-right: 1px solid #cbd5e1;">Continuous Diagnostic SBA Progress Tracking</td>
+                <td style="padding: 5px 8px; border-right: 1px solid #cbd5e1; font-family: monospace; font-size: 9.5px;">SBA-DIAG-01</td>
+                <td style="padding: 5px 8px; text-align: right; border-right: 1px solid #cbd5e1;">300.00</td>
+                <td style="padding: 5px 8px; text-align: right;">4,900.00</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #e2e8f0; background: #f0fdf4;">
+                <td style="padding: 5px 8px; border-right: 1px solid #cbd5e1;">2026/01/28</td>
+                <td style="padding: 5px 8px; border-right: 1px solid #cbd5e1; font-weight: 700; color: #047857;">ABSA / FNB Electronic Funds Transfer (EFT) Payment Received</td>
+                <td style="padding: 5px 8px; border-right: 1px solid #cbd5e1; font-family: monospace; font-size: 9.5px;">EFT-PAY-98234</td>
+                <td style="padding: 5px 8px; text-align: right; border-right: 1px solid #cbd5e1; font-weight: 700; color: #047857;">-${paidAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td style="padding: 5px 8px; text-align: right; font-weight: 800; color: ${balanceDue > 0 ? "#b82e2e" : "#047857"};">
+                  ${balanceDue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </td>
+              </tr>
             </tbody>
           </table>
 
-          <!-- Bottom Highlight: R 990.00 Due By You -->
-          <div style="text-align: right; margin: 18px 0 16px; font-size: 13px; font-weight: 800; color: #000000; letter-spacing: 0.3px;">
-            ${finalDueStr}
+          <!-- Final Balance Due Banner -->
+          ${finalStatusBanner}
+
+          <!-- Institutional Settlement & Banking Notice -->
+          <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px 16px; margin-bottom: 18px; font-size: 10px; color: #334155; line-height: 1.5;">
+            <strong style="color: #0f172a; font-size: 11px;">Banking Details for Electronic Funds Transfer (EFT):</strong><br />
+            Bank Name: <strong>First National Bank (FNB) / ABSA Bank</strong> &bull; Account Name: <strong>LogTraq Tutoring &amp; StudyHub Education (Pty) Ltd</strong><br />
+            Account Number: <strong>62899014521</strong> &bull; Branch Code: <strong>250655</strong> &bull; Reference: <strong style="color: #b82e2e; font-family: monospace;">${student.studentId}</strong> (Compulsory)
           </div>
 
-          <!-- System Note -->
-          <p style="font-size: 9.5px; color: #000000; margin: 10px 0 6px; font-style: normal;">
-            Please note: the account provided is based on the current information available on our system, and is subject to change
-          </p>
-
-          <!-- Banking Details Block -->
-          <div style="font-size: 9.5px; color: #000000; line-height: 1.45; margin-bottom: 18px;">
-            <strong>Bank Account Details:</strong> ABSA Bank / First National Bank, Account Name: StudyHub Education (Pty) Ltd,<br />
-            Branch code: 632005, Account No: 2140000054 Swift Code: ABSAZAJJ (use Student number as reference)
-          </div>
-
-          <!-- Institutional Bottom 3-Column Footer -->
-          <div style="border-top: 1px solid #000000; padding-top: 6px; display: flex; justify-content: space-between; font-size: 8.5px; color: #000000; line-height: 1.35;">
-            <div>
-              StudyHub Education &bull; University Partner Portal<br />
-              Private Bag X20<br />
-              Hatfield<br />
-              0028
-            </div>
-            <div style="text-align: center;">
-              Tel: &nbsp; +27 (0)12 420 3111<br />
-              Email: &nbsp; ssc@studyhub.logtraq.co.za
+          <!-- Bottom Footer Lockup -->
+          <div style="border-top: 1.5px solid #0f172a; padding-top: 10px; display: flex; justify-content: space-between; align-items: center; font-size: 9px; color: #64748b;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <img src="${logoMark}" alt="LogTraq Mark" style="height: 20px; width: 20px; object-fit: contain;" />
+              <span><strong>LogTraq Tutoring Services</strong> &bull; StudyHub Online High School Learning Portal</span>
             </div>
             <div style="text-align: right;">
-              www.studyhub.logtraq.co.za
+              <span>support@logtraq.co.za &bull; www.studyhub.logtraq.co.za &bull; Tel: +27 (0)11 800 4520</span>
             </div>
           </div>
 

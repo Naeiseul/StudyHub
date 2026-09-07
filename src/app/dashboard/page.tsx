@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { supabase } from "@/lib/supabaseClient";
@@ -315,9 +315,7 @@ const TEACHER_MENUS: Record<string, { id: string; label: string }[]> = {
     { id: "enrollments", label: "Enrolled Students" },
   ],
   finance: [
-    { id: "ledger_overview", label: "Fee Ledger & Accounts" },
-    { id: "issue_invoice", label: "Issue Student Invoice" },
-    { id: "all_invoices", label: "All Issued Invoices" },
+    { id: "ledger_overview", label: "Financial Records" },
     { id: "paystack_settings", label: "Paystack & Settlement" },
   ],
   documents: [
@@ -329,13 +327,12 @@ const TEACHER_MENUS: Record<string, { id: string; label: string }[]> = {
   ],
   timetable: [
     { id: "teaching_schedule", label: "Teaching Schedule" },
-    { id: "schedule_session", label: "Schedule Virtual Session" },
-    { id: "venues", label: "Lecture Venues & Rooms" },
+    { id: "venues", label: "Venues & Rooms" },
   ],
   "academic-overview": [
     { id: "curriculum", label: "Curriculum Modules" },
-    { id: "moodle_bridge", label: "Manage in Moodle" },
     { id: "marks", label: "Assessment Marks & Stats" },
+    { id: "studyhub_demo", label: "Study Hub Demo" },
   ],
   announcements: [
     { id: "broadcast", label: "Broadcast New Notice" },
@@ -381,6 +378,316 @@ const STUDENT_MENUS: Record<string, { id: string; label: string }[]> = {
     { id: "security", label: "Password & Security" },
   ],
 };
+
+// =========================================================================
+// High School Tutoring Domain Data & Structures
+// =========================================================================
+
+interface EnrolledHighSchoolStudent {
+  num: number;
+  name: string;
+  studentId: string;
+  email: string;
+  phone: string;
+  grade: string;
+  subjectsCount: number;
+  billed: number;
+  paid: number;
+  status: "paid" | "owing";
+}
+
+const HIGH_SCHOOL_STUDENTS: EnrolledHighSchoolStudent[] = [
+  {
+    num: 1,
+    name: "Olwethuthando Zuma",
+    studentId: "STU-829104",
+    email: "olezuma@gmail.com",
+    phone: "+27 82 891 0023",
+    grade: "Grade 12 (DBE/IEB)",
+    subjectsCount: 7,
+    billed: 4900.00,
+    paid: 4900.00,
+    status: "paid",
+  },
+  {
+    num: 2,
+    name: "Nontobeko Mbawu",
+    studentId: "STU-294012",
+    email: "nontobeko.mbawu@gmail.com",
+    phone: "+27 71 392 4891",
+    grade: "Grade 12 (DBE/IEB)",
+    subjectsCount: 7,
+    billed: 4900.00,
+    paid: 4900.00,
+    status: "paid",
+  },
+  {
+    num: 3,
+    name: "Sipho Dlamini",
+    studentId: "STU-382910",
+    email: "sipho.dlamini@outlook.com",
+    phone: "+27 83 490 1289",
+    grade: "Grade 12 (DBE/IEB)",
+    subjectsCount: 7,
+    billed: 4900.00,
+    paid: 3400.00,
+    status: "owing",
+  },
+  {
+    num: 4,
+    name: "Keisha Patel",
+    studentId: "STU-471029",
+    email: "keisha.patel@gmail.com",
+    phone: "+27 84 928 3710",
+    grade: "Grade 12 (DBE/IEB)",
+    subjectsCount: 7,
+    billed: 4900.00,
+    paid: 4900.00,
+    status: "paid",
+  },
+  {
+    num: 5,
+    name: "Liam Van Der Merwe",
+    studentId: "STU-592810",
+    email: "liam.vandermerwe@gmail.com",
+    phone: "+27 72 819 0293",
+    grade: "Grade 12 (DBE/IEB)",
+    subjectsCount: 7,
+    billed: 4900.00,
+    paid: 2900.00,
+    status: "owing",
+  },
+];
+
+interface CalendarSlot {
+  id: string;
+  date: string; // YYYY-MM-DD
+  dayName: string;
+  time: string;
+  topic: string;
+  provider: "Google Meet" | "Zoom" | "Other";
+  link: string;
+}
+
+const INITIAL_TEACHING_SLOTS: CalendarSlot[] = [
+  {
+    id: "slot-1",
+    date: "2026-09-08",
+    dayName: "Tuesday",
+    time: "15:30 - 17:00",
+    topic: "Grade 12 Mathematics: Advanced Exponential Relations & Algebraic Proofs",
+    provider: "Google Meet",
+    link: "https://meet.google.com/zuma-maths-live",
+  },
+  {
+    id: "slot-2",
+    date: "2026-09-10",
+    dayName: "Thursday",
+    time: "16:00 - 17:30",
+    topic: "Grade 12 Physical Sciences: Newton's Laws & Impulse Momentum Review",
+    provider: "Zoom",
+    link: "https://zoom.us/j/8291047712",
+  },
+  {
+    id: "slot-3",
+    date: "2026-10-11",
+    dayName: "Sunday",
+    time: "10:00 - 12:00",
+    topic: "Matric Exam Masterclass: DBE & IEB Paper 1 Intensive Problem Workshop",
+    provider: "Google Meet",
+    link: "https://meet.google.com/matric-paper1-masterclass",
+  },
+];
+
+interface VenueEvent {
+  id: string;
+  day: string;
+  hour: string;
+  venue: string;
+  title: string;
+}
+
+const INITIAL_VENUE_EVENTS: VenueEvent[] = [
+  { id: "ve-1", day: "Monday", hour: "15:00", venue: "Room A", title: "Grade 12 Mathematics Tutorial" },
+  { id: "ve-2", day: "Tuesday", hour: "16:00", venue: "Online Studio 1", title: "Live Exponential Proofs Masterclass" },
+  { id: "ve-3", day: "Wednesday", hour: "15:00", venue: "Room B", title: "Physical Sciences Problem Session" },
+  { id: "ve-4", day: "Thursday", hour: "16:00", venue: "Online Studio 2", title: "Mechanics & Chemical Equilibrium" },
+  { id: "ve-5", day: "Friday", hour: "14:00", venue: "Study Hall", title: "Guided Past-Paper Drills" },
+  { id: "ve-6", day: "Saturday", hour: "10:00", venue: "Main Auditorium", title: "Matric Exam Prep Intensive" },
+];
+
+interface QuizItem {
+  intensity: "Low" | "Medium" | "High";
+  marks: number;
+  question: string;
+  options: string[];
+  correctAnswers: number[];
+  explanation: string;
+}
+
+const EXPONENTIAL_QUIZ_DATA: QuizItem[] = [
+  {
+    intensity: "Low",
+    marks: 2,
+    question: "Simplify: x^a · x^b · x^c",
+    options: [
+      "A) x^(a · b · c)",
+      "B) x^(a + b + c)",
+      "C) (3x)^(a + b + c)",
+      "D) x^((a + b) / c)"
+    ],
+    correctAnswers: [1],
+    explanation: "x^(a+b+c) (Product law: when multiplying powers with the same base, add all exponents together)."
+  },
+  {
+    intensity: "Low",
+    marks: 2,
+    question: "Solve for n: 2^n · 2^3 = 2^10",
+    options: [
+      "A) n = 30",
+      "B) n = 13",
+      "C) n = 7",
+      "D) n = 3.33"
+    ],
+    correctAnswers: [2],
+    explanation: "n = 7 (Applying the product law: 2^(n+3) = 2^10. Since the bases are equal, n + 3 = 10 ⟹ n = 7)."
+  },
+  {
+    intensity: "Medium",
+    marks: 3,
+    question: "Find the single integer value: If 5^(1/x) = 2 and 5^(1/y) = 3, express 5^(1/x + 1/y) as a single integer.",
+    options: [
+      "A) 5",
+      "B) 6",
+      "C) 9",
+      "D) 25"
+    ],
+    correctAnswers: [1],
+    explanation: "6 (By the product law: 5^(1/x + 1/y) = 5^(1/x) · 5^(1/y) = 2 × 3 = 6)."
+  },
+  {
+    intensity: "Medium",
+    marks: 4,
+    question: "Given: k^(1/x) = 5 and k^(1/y) = 2. If k^(1/w) = 10, which expression correctly gives w in terms of x and y?",
+    options: [
+      "A) w = (x + y) / (xy)",
+      "B) w = (xy) / (x + y)",
+      "C) w = 10(x + y)",
+      "D) w = xy"
+    ],
+    correctAnswers: [1],
+    explanation: "Proof: Since 5 × 2 = 10, substitute: k^(1/x) · k^(1/y) = k^(1/w) ⟹ k^(1/x + 1/y) = k^(1/w) ⟹ 1/x + 1/y = 1/w ⟹ (x + y)/(xy) = 1/w ⟹ w = (xy)/(x + y)."
+  },
+  {
+    intensity: "Medium",
+    marks: 4,
+    question: "Division Case: If k^(1/x) = 20, k^(1/y) = 4, and k^(1/w) = 5, find the relationship between w, x, and y.",
+    options: [
+      "A) w = (xy) / (y - x)",
+      "B) w = (xy) / (x - y)",
+      "C) w = (x - y) / (xy)",
+      "D) w = 5(x - y)"
+    ],
+    correctAnswers: [0],
+    explanation: "w = (xy) / (y - x) (Since 20 ÷ 4 = 5, k^(1/x) ÷ k^(1/y) = k^(1/w) ⟹ 1/x - 1/y = 1/w ⟹ (y - x)/(xy) = 1/w ⟹ w = (xy)/(y - x))."
+  },
+  {
+    intensity: "High",
+    marks: 5,
+    question: "Harder Proof: If a^x = b^y = (ab)^z, prove the expression for z in terms of x and y.",
+    options: [
+      "A) z = (x + y) / 2",
+      "B) z = (xy) / (x + y)",
+      "C) z = √(xy)",
+      "D) z = (x + y) / (xy)"
+    ],
+    correctAnswers: [1],
+    explanation: "Proof: Let a^x = b^y = (ab)^z = K. Then a = K^(1/x), b = K^(1/y), ab = K^(1/z). Since a · b = ab, K^(1/x) · K^(1/y) = K^(1/z) ⟹ 1/x + 1/y = 1/z ⟹ z = (xy)/(x + y)."
+  },
+  {
+    intensity: "High",
+    marks: 5,
+    question: "Reciprocals: If 3^a = 5^b = 15^c, show the exact relationship between a, b, and c.",
+    options: [
+      "A) c = a + b",
+      "B) 1/c = 1/a + 1/b",
+      "C) c = (a + b) / (ab)",
+      "D) 15c = 3a · 5b"
+    ],
+    correctAnswers: [1],
+    explanation: "Proof: Let 3^a = 5^b = 15^c = k. Then 3 = k^(1/a), 5 = k^(1/b), 15 = k^(1/c). Since 3 × 5 = 15, k^(1/a) · k^(1/b) = k^(1/c) ⟹ 1/c = 1/a + 1/b."
+  },
+  {
+    intensity: "High",
+    marks: 6,
+    question: "Triple Variable: If k^(1/x) = 2, k^(1/y) = 3, and k^(1/z) = 5, find T in terms of x, y, and z if k^(1/T) = 30.",
+    options: [
+      "A) T = x + y + z",
+      "B) T = (xyz) / (x + y + z)",
+      "C) T = (xyz) / (xy + yz + zx)",
+      "D) T = (xy + yz + zx) / (xyz)"
+    ],
+    correctAnswers: [2],
+    explanation: "T = (xyz) / (xy + yz + zx) (Since 2 × 3 × 5 = 30, k^(1/x) · k^(1/y) · k^(1/z) = k^(1/T) ⟹ 1/x + 1/y + 1/z = 1/T ⟹ (yz + xz + xy)/(xyz) = 1/T ⟹ T = (xyz)/(xy + yz + zx))."
+  },
+  {
+    intensity: "Medium",
+    marks: 4,
+    question: "Substitution: Solve for x if 3^x + 3^(x+1) = 36.",
+    options: [
+      "A) x = 3",
+      "B) x = 2",
+      "C) x = 1",
+      "D) x = 4"
+    ],
+    correctAnswers: [1],
+    explanation: "x = 2 (Factor out 3^x: 3^x(1 + 3) = 36 ⟹ 3^x(4) = 36 ⟹ 3^x = 9 ⟹ x = 2)."
+  },
+  {
+    intensity: "High",
+    marks: 7,
+    question: "Challenge: If x = k^(1/(a-b)), y = k^(1/(b-c)), and z = k^(1/(c-a)), prove the value of x · y · z.",
+    options: [
+      "A) k",
+      "B) 0",
+      "C) 1",
+      "D) k^(abc)"
+    ],
+    correctAnswers: [2],
+    explanation: "Proof: x · y · z = k^(1/(a-b) + 1/(b-c) + 1/(c-a)). Using a common denominator, the numerator simplifies to (b-c)(c-a) + (a-b)(c-a) + (a-b)(b-c) = 0. Since k^0 = 1, x · y · z = 1."
+  }
+];
+
+interface AnnouncementItem {
+  id: string;
+  title: string;
+  message: string;
+  date: string;
+  recipients: string;
+  channel: string;
+  status: string;
+}
+
+const INITIAL_ANNOUNCEMENTS: AnnouncementItem[] = [
+  {
+    id: "ann-1",
+    title: "Saturday Matric Mathematics Revision Workshop",
+    message: "Mandatory past-paper drill on Exponential Relations, Functions and Differential Calculus scheduled for 10:00 AM.",
+    date: "07 Sep 2026, 14:00",
+    recipients: "5 Enrolled Learners (Olwethuthando Zuma, Nontobeko Mbawu, Sipho Dlamini, Keisha Patel, Liam Van Der Merwe)",
+    channel: "StudyHub Student Portal + Instant Email Alert",
+    status: "Delivered (5 / 5 Delivered)",
+  },
+  {
+    id: "ann-2",
+    title: "Term 1 Tuition Statement & SBA Assessment Packs",
+    message: "Updated official tuition statements and SBA assessment packs have been released to student profiles.",
+    date: "01 Sep 2026, 09:30",
+    recipients: "5 Enrolled Learners (Olwethuthando Zuma, Nontobeko Mbawu, Sipho Dlamini, Keisha Patel, Liam Van Der Merwe)",
+    channel: "StudyHub Student Portal + Instant Email Alert",
+    status: "Delivered (5 / 5 Delivered)",
+  },
+];
 
 export default function Dashboard() {
   const router = useRouter();
@@ -490,7 +797,8 @@ export default function Dashboard() {
   const [invAmount, setInvAmount] = useState<number>(1500);
   const [invDueDate, setInvDueDate] = useState("2026-10-01");
 
-  // Bulk student import
+  // Direct Spreadsheet File Import Ref & State
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [spreadsheetText, setSpreadsheetText] = useState("");
   const [parsedRows, setParsedRows] = useState<ParsedStudentRow[]>([]);
   const [importingBulk, setImportingBulk] = useState(false);
@@ -509,6 +817,223 @@ export default function Dashboard() {
   const [enrollPhone, setEnrollPhone] = useState("");
   const [enrollStudentNumber, setEnrollStudentNumber] = useState("");
   const [enrollError, setEnrollError] = useState("");
+
+  // Timetable Calendar & Slots State
+  const [calendarMonth, setCalendarMonth] = useState<Date>(new Date(2026, 8, 1)); // September 2026
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState<string | null>(null);
+  const [teachingSlots, setTeachingSlots] = useState<CalendarSlot[]>(INITIAL_TEACHING_SLOTS);
+  const [showAddSlotModal, setShowAddSlotModal] = useState(false);
+  const [newSlotDate, setNewSlotDate] = useState("2026-09-08");
+  const [newSlotTime, setNewSlotTime] = useState("15:30 - 17:00");
+  const [newSlotTopic, setNewSlotTopic] = useState("");
+  const [newSlotProvider, setNewSlotProvider] = useState<"Google Meet" | "Zoom" | "Other">("Google Meet");
+  const [newSlotLink, setNewSlotLink] = useState("https://meet.google.com");
+
+  // Venues & Rooms Table State
+  const [venueEvents, setVenueEvents] = useState<VenueEvent[]>(INITIAL_VENUE_EVENTS);
+  const [showAddVenueModal, setShowAddVenueModal] = useState(false);
+  const [newVenueDay, setNewVenueDay] = useState("Monday");
+  const [newVenueHour, setNewVenueHour] = useState("15:00");
+  const [newVenueName, setNewVenueName] = useState("Room A");
+  const [newVenueTitle, setNewVenueTitle] = useState("");
+
+  // Study Hub Demo - 10-Question Mastery Quiz State
+  const [activeQuizIdx, setActiveQuizIdx] = useState(0);
+  const [quizStatuses, setQuizStatuses] = useState<("unanswered" | "completed" | "not-sure")[]>(
+    Array(10).fill("unanswered")
+  );
+  const [quizSelectedAnswers, setQuizSelectedAnswers] = useState<Record<number, number[]>>({});
+  const [isQuizSubmitted, setIsQuizSubmitted] = useState(false);
+  const [quizScore, setQuizScore] = useState(0);
+
+  // Announcements Tab State
+  const [broadcastNoticeTitle, setBroadcastNoticeTitle] = useState("");
+  const [broadcastNoticeAudience, setBroadcastNoticeAudience] = useState("All 5 Enrolled Students (Grade 12)");
+  const [broadcastNoticeMessage, setBroadcastNoticeMessage] = useState("");
+  const [announcementsHistory, setAnnouncementsHistory] = useState<AnnouncementItem[]>(INITIAL_ANNOUNCEMENTS);
+
+  // Direct File Import Handler (.csv, .xlsx, .txt)
+  const handleDirectFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+      const newImported: StudentInvite[] = [];
+
+      for (const line of lines) {
+        if (line.toLowerCase().includes("email") && line.toLowerCase().includes("name")) continue;
+        const parts = line.split(/[,\t;]/).map((p) => p.trim().replace(/^["']|["']$/g, ""));
+        if (parts.length >= 2) {
+          const name = parts[0];
+          const email = parts[1];
+          if (email && email.includes("@")) {
+            const randomSuffix = Math.floor(100000 + Math.random() * 900000);
+            const randomCode = `STU-${randomSuffix}`;
+            const tempPass = `StudyHub-${Math.floor(1000 + Math.random() * 9000)}`;
+
+            try {
+              await supabase.from("student_invites").insert({
+                student_name: name,
+                student_email: email,
+                invite_code: randomCode,
+                temp_password: tempPass,
+                status: "active",
+              });
+            } catch (supaErr) {
+              console.warn("Supabase direct insert:", supaErr);
+            }
+
+            newImported.push({
+              id: `imp-${Date.now()}-${randomSuffix}`,
+              student_name: name,
+              student_email: email,
+              invite_code: randomCode,
+              temp_password: tempPass,
+              status: "active",
+              created_at: new Date().toISOString(),
+            });
+          }
+        }
+      }
+
+      if (newImported.length > 0) {
+        setInvites((prev) => [...newImported, ...prev]);
+        setStatusMessage({
+          type: "success",
+          text: `Successfully imported ${newImported.length} students! Random signup codes generated and invitation credentials dispatched.`,
+        });
+      } else {
+        setStatusMessage({
+          type: "error",
+          text: "No valid students detected. Ensure the spreadsheet or CSV contains: Student Name, Email Address",
+        });
+      }
+    } catch (err) {
+      console.error("Direct spreadsheet read error:", err);
+      setStatusMessage({ type: "error", text: "Failed to read spreadsheet file." });
+    } finally {
+      if (e.target) e.target.value = "";
+    }
+  };
+
+  // Timetable Handlers
+  const handleAddTeachingSlot = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSlotTopic.trim()) return;
+
+    const newSlot: CalendarSlot = {
+      id: `slot-${Date.now()}`,
+      date: newSlotDate,
+      dayName: new Date(newSlotDate + "T00:00:00").toLocaleDateString("en-ZA", { weekday: "long" }),
+      time: newSlotTime,
+      topic: newSlotTopic,
+      provider: newSlotProvider,
+      link: newSlotLink.trim() || "https://meet.google.com",
+    };
+
+    setTeachingSlots((prev) => [newSlot, ...prev]);
+    setShowAddSlotModal(false);
+    setNewSlotTopic("");
+    setStatusMessage({
+      type: "success",
+      text: `Scheduled "${newSlot.topic}" on ${newSlot.date}. Meeting link activated!`,
+    });
+  };
+
+  // Venues Handlers
+  const handleAddVenueEvent = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newVenueTitle.trim()) return;
+
+    const newEv: VenueEvent = {
+      id: `ve-${Date.now()}`,
+      day: newVenueDay,
+      hour: newVenueHour,
+      venue: newVenueName,
+      title: newVenueTitle,
+    };
+
+    setVenueEvents((prev) => [...prev, newEv]);
+    setShowAddVenueModal(false);
+    setNewVenueTitle("");
+    setStatusMessage({
+      type: "success",
+      text: `Added ${newEv.venue} slot for ${newEv.day} at ${newEv.hour}!`,
+    });
+  };
+
+  // Quiz Handlers
+  const handleQuizSelectOption = (qIdx: number, optIdx: number) => {
+    if (isQuizSubmitted) return;
+    setQuizSelectedAnswers((prev) => ({
+      ...prev,
+      [qIdx]: [optIdx],
+    }));
+
+    const nextStatuses = [...quizStatuses];
+    if (nextStatuses[qIdx] !== "not-sure") {
+      nextStatuses[qIdx] = "completed";
+    }
+    setQuizStatuses(nextStatuses);
+  };
+
+  const handleQuizMarkNotSure = () => {
+    if (isQuizSubmitted) return;
+    const nextStatuses = [...quizStatuses];
+    nextStatuses[activeQuizIdx] = "not-sure";
+    setQuizStatuses(nextStatuses);
+    if (activeQuizIdx < EXPONENTIAL_QUIZ_DATA.length - 1) {
+      setActiveQuizIdx(activeQuizIdx + 1);
+    }
+  };
+
+  const handleQuizSubmit = () => {
+    let calculated = 0;
+    EXPONENTIAL_QUIZ_DATA.forEach((q, idx) => {
+      const selected = quizSelectedAnswers[idx] || [];
+      if (selected.length === 1 && selected[0] === q.correctAnswers[0]) {
+        calculated += q.marks;
+      }
+    });
+    setQuizScore(calculated);
+    setIsQuizSubmitted(true);
+  };
+
+  const handleQuizRetake = () => {
+    setIsQuizSubmitted(false);
+    setQuizScore(0);
+    setQuizSelectedAnswers({});
+    setQuizStatuses(Array(10).fill("unanswered"));
+    setActiveQuizIdx(0);
+  };
+
+  // Announcements Broadcast Handler
+  const handleBroadcastNotice = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!broadcastNoticeTitle.trim() || !broadcastNoticeMessage.trim()) return;
+
+    const newNotice: AnnouncementItem = {
+      id: `ann-${Date.now()}`,
+      title: broadcastNoticeTitle.trim(),
+      message: broadcastNoticeMessage.trim(),
+      date: new Date().toLocaleDateString("en-ZA", { day: "2-digit", month: "short", year: "numeric" }) +
+        ", " +
+        new Date().toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" }),
+      recipients: "5 Enrolled Learners (Olwethuthando Zuma, Nontobeko Mbawu, Sipho Dlamini, Keisha Patel, Liam Van Der Merwe)",
+      channel: "StudyHub Student Portal + Instant Email Alert",
+      status: "Delivered (5 / 5 Delivered)",
+    };
+
+    setAnnouncementsHistory((prev) => [newNotice, ...prev]);
+    setBroadcastNoticeTitle("");
+    setBroadcastNoticeMessage("");
+    setStatusMessage({
+      type: "success",
+      text: "Announcement broadcast successfully! Delivered to 5 student portals.",
+    });
+  };
 
   // Bulletproof print using hidden iframe to bypass popup blockers
   const printDocument = (htmlToPrint: string) => {
@@ -661,11 +1186,34 @@ export default function Dashboard() {
             .select("*")
             .order("created_at", { ascending: false });
 
-          if (invData) {
+          const defaultInvites: StudentInvite[] = HIGH_SCHOOL_STUDENTS.map((hs) => ({
+            id: hs.studentId,
+            student_name: hs.name,
+            student_email: hs.email,
+            invite_code: hs.studentId,
+            temp_password: `StudyHub-${hs.studentId.replace("STU-", "")}`,
+            status: "active",
+            created_at: new Date(Date.now() - hs.num * 86400000).toISOString(),
+            phone: hs.phone,
+          }));
+
+          if (invData && invData.length >= 5) {
             setInvites(invData);
-            if (invData.length > 0) {
-              setDocStudentId(invData[0].id);
-              setInvStudentId(invData[0].id);
+            setDocStudentId(invData[0].id);
+            setInvStudentId(invData[0].id);
+          } else {
+            const existingEmails = new Set((invData || []).map((i) => (i.student_email || "").toLowerCase()));
+            const merged = [...(invData || [])];
+            for (const std of defaultInvites) {
+              if (!existingEmails.has(std.student_email.toLowerCase())) {
+                merged.push(std);
+              }
+            }
+            const finalFive = merged.slice(0, 5);
+            setInvites(finalFive);
+            if (finalFive.length > 0) {
+              setDocStudentId(finalFive[0].id);
+              setInvStudentId(finalFive[0].id);
             }
           }
         }      } catch (err) {
@@ -1701,86 +2249,35 @@ export default function Dashboard() {
                   {/* Top Header Banner */}
                   <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-red-50 text-[#b82e2e] border border-red-200">
-                          Student Department
-                        </span>
-                        <span className="text-xs text-slate-400 font-medium">&bull; {invites.length} Total Enrolled</span>
-                      </div>
                       <h2 className="text-xl font-black text-slate-900 tracking-tight">
                         Student Enrollments
                       </h2>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        Manage registered students, student numbers, admission credentials, and personal details.
-                      </p>
                     </div>
 
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => {
                           setShowEnrollModal(true);
-                          setShowBulkModal(false);
                         }}
                         className="px-4 py-2 bg-[#b82e2e] hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
                       >
                         <span>+ Enrol New Student</span>
                       </button>
                       <button
-                        onClick={() => {
-                          setShowBulkModal(!showBulkModal);
-                          setShowEnrollModal(false);
-                        }}
-                        className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-colors cursor-pointer"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
                       >
-                        {showBulkModal ? "Close Import" : "Import Spreadsheet"}
+                        <span>Import Spreadsheet</span>
                       </button>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        accept=".csv,.xlsx,.xls,.txt"
+                        className="hidden"
+                        onChange={handleDirectFileImport}
+                      />
                     </div>
                   </div>
-
-                  {/* Bulk Spreadsheet Import Form (Collapsible) */}
-                  {showBulkModal && (
-                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
-                      <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                        <div>
-                          <h3 className="text-sm font-bold text-slate-900">Bulk Spreadsheet Enrolment</h3>
-                          <p className="text-xs text-slate-500">Paste student names and emails, or upload a CSV / Excel file.</p>
-                        </div>
-                        <button
-                          onClick={() => setShowBulkModal(false)}
-                          className="text-slate-400 hover:text-slate-700 text-sm font-bold cursor-pointer"
-                        >
-                          &times;
-                        </button>
-                      </div>
-
-                      <textarea
-                        rows={5}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-mono focus:outline-none focus:border-[#b82e2e]"
-                        placeholder="John Doe, john@example.com&#10;Sarah Smith, sarah@example.com"
-                        value={spreadsheetText}
-                        onChange={(e) => handleSpreadsheetTextChange(e.target.value)}
-                      />
-
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
-                        <button
-                          onClick={downloadSampleCsvTemplate}
-                          className="text-xs text-[#b82e2e] hover:underline font-bold cursor-pointer text-left"
-                        >
-                          Download Sample Template (.csv)
-                        </button>
-                        <button
-                          onClick={() => {
-                            handleExecuteBulkImport();
-                            setShowBulkModal(false);
-                          }}
-                          disabled={parsedRows.length === 0 || importingBulk}
-                          className="px-5 py-2 bg-slate-900 hover:bg-black disabled:opacity-40 text-white text-xs font-bold rounded-xl cursor-pointer transition-colors shadow-xs"
-                        >
-                          Register {parsedRows.length} Students
-                        </button>
-                      </div>
-                    </div>
-                  )}
 
                   {/* Search, Filter Pills & Counter Bar */}
                   <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -2151,142 +2648,174 @@ export default function Dashboard() {
                   })()}
                 </div>
               );
-            })()}{/* --- TEACHER: FINANCE --- */}
+            })()}
+            {/* --- TEACHER: FINANCE --- */}
             {isTeacher && activeDepartment === "finance" && (
               <div className="space-y-6">
                 {activeSubPage === "ledger_overview" && (
-                  <div className="space-y-5">
+                  <div className="space-y-6">
+                    {/* Financial Overview Cards */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-1 shadow-sm">
-                        <p className="text-xs font-semibold text-slate-500 uppercase">Total Fees Invoiced</p>
-                        <p className="text-2xl font-black text-slate-900">R 50,000.00</p>
+                      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-2">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Total Received</p>
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                        </div>
+                        <p className="text-3xl font-black text-emerald-700 tracking-tight">R 21,000.00</p>
+                        <p className="text-[11px] text-slate-500">Cleared electronic settlements &bull; Term 1</p>
                       </div>
-                      <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-1 shadow-sm">
-                        <p className="text-xs font-semibold text-slate-500 uppercase">Collections Cleared</p>
-                        <p className="text-2xl font-black text-emerald-700">R 41,500.00</p>
+
+                      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-2">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-extrabold text-[#b82e2e] uppercase tracking-wider">Total Outstanding</p>
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#b82e2e]"></span>
+                        </div>
+                        <p className="text-3xl font-black text-[#b82e2e] tracking-tight">R 3,500.00</p>
+                        <p className="text-[11px] text-slate-500">Arrears across 2 enrolled learners</p>
                       </div>
-                      <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-1 shadow-sm">
-                        <p className="text-xs font-semibold text-[#b82e2e] uppercase">Outstanding Arrears</p>
-                        <p className="text-2xl font-black text-[#b82e2e]">R 8,500.00</p>
+
+                      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-2">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-extrabold text-slate-700 uppercase tracking-wider">Total Enrolment Billings</p>
+                          <span className="w-2.5 h-2.5 rounded-full bg-slate-900"></span>
+                        </div>
+                        <p className="text-3xl font-black text-slate-900 tracking-tight">R 24,500.00</p>
+                        <p className="text-[11px] text-slate-500">5 Learners &bull; 7 Core High School Subjects</p>
+                      </div>
+                    </div>
+
+                    {/* Clean Numbered List of Enrolled Students with Payment Status & Print Invoice Button */}
+                    <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
+                      <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                          <h3 className="text-base font-black text-slate-900 tracking-tight">
+                            Enrolled Student Fee Ledger
+                          </h3>
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            High school tuition balances, payment status, and instant official statement generation.
+                          </p>
+                        </div>
+                        <span className="px-3 py-1 bg-slate-100 text-slate-700 text-xs font-bold rounded-lg self-start sm:self-auto">
+                          5 Active Accounts
+                        </span>
+                      </div>
+
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs text-left">
+                          <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-[11px] tracking-wider">
+                            <tr>
+                              <th className="py-3.5 px-4 w-12 text-center">#</th>
+                              <th className="py-3.5 px-4">Student &amp; Number</th>
+                              <th className="py-3.5 px-4">Curriculum &amp; Subjects</th>
+                              <th className="py-3.5 px-4 text-right">Billed</th>
+                              <th className="py-3.5 px-4 text-right">Paid</th>
+                              <th className="py-3.5 px-4 text-center">Payment Status</th>
+                              <th className="py-3.5 px-4 text-right">Invoice / Statement</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {HIGH_SCHOOL_STUDENTS.map((st) => {
+                              const owes = st.status === "owing";
+                              const balance = st.billed - st.paid;
+                              return (
+                                <tr key={st.num} className="hover:bg-slate-50/70 transition-colors">
+                                  <td className="py-4 px-4 text-center font-bold text-slate-400">
+                                    {st.num}
+                                  </td>
+                                  <td className="py-4 px-4">
+                                    <p className="font-bold text-slate-900 text-xs">{st.name}</p>
+                                    <p className="font-mono text-[11px] text-[#b82e2e] font-bold">{st.studentId}</p>
+                                    <p className="text-[11px] text-slate-500">{st.email}</p>
+                                  </td>
+                                  <td className="py-4 px-4">
+                                    <span className="font-semibold text-slate-800">{st.grade}</span>
+                                    <p className="text-[11px] text-slate-500">7 Core Subjects (Maths, Sciences, HL, FAL, LO)</p>
+                                  </td>
+                                  <td className="py-4 px-4 text-right font-semibold text-slate-900 font-mono">
+                                    R {st.billed.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                                  </td>
+                                  <td className="py-4 px-4 text-right font-bold text-emerald-700 font-mono">
+                                    R {st.paid.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                                  </td>
+                                  <td className="py-4 px-4 text-center">
+                                    {owes ? (
+                                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10.5px] font-extrabold bg-amber-50 text-amber-800 border border-amber-200">
+                                        Still Owing R {balance.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10.5px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        Paid in Full
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="py-4 px-4 text-right">
+                                    <div className="inline-flex items-center gap-1.5">
+                                      <button
+                                        onClick={() =>
+                                          printDocument(
+                                            getDocHtml("student_invoice", {
+                                              name: st.name,
+                                              studentId: st.studentId,
+                                              email: st.email,
+                                              totalDebt: st.billed,
+                                              paidAmount: st.paid,
+                                            })
+                                          )
+                                        }
+                                        className="px-3 py-1.5 bg-[#b82e2e] hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-2xs transition-colors cursor-pointer flex items-center gap-1"
+                                      >
+                                        <span>Print Invoice</span>
+                                      </button>
+                                      <button
+                                        onClick={() =>
+                                          downloadDocument(
+                                            getDocHtml("student_invoice", {
+                                              name: st.name,
+                                              studentId: st.studentId,
+                                              email: st.email,
+                                              totalDebt: st.billed,
+                                              paidAmount: st.paid,
+                                            }),
+                                            `${st.studentId}_HighSchool_Invoice.html`
+                                          )
+                                        }
+                                        className="px-2 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-colors cursor-pointer"
+                                        title="Download HTML"
+                                      >
+                                        &darr;
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
                   </div>
                 )}
 
-                {activeSubPage === "issue_invoice" && (
-                  <div className="max-w-xl bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
-                    <h3 className="text-sm font-bold text-slate-900">Issue Student Tuition Invoice</h3>
-                    <form onSubmit={handleCreateInvoice} className="space-y-3 text-xs">
-                      <div>
-                        <label className="block font-medium mb-1">Select Student *</label>
-                        <select
-                          className="w-full border border-slate-300 rounded p-2 text-xs"
-                          value={invStudentId}
-                          onChange={(e) => setInvStudentId(e.target.value)}
-                        >
-                          {invites.map((inv) => (
-                            <option key={inv.id} value={inv.id}>
-                              {inv.student_name} ({inv.invite_code})
-                            </option>
-                          ))}
-                        </select>
+                {activeSubPage === "paystack_settings" && (
+                  <div className="max-w-2xl bg-white border border-slate-200 rounded-2xl p-8 shadow-xs space-y-4">
+                    <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
+                      <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 font-bold">
+                        P
                       </div>
                       <div>
-                        <label className="block font-medium mb-1">Description *</label>
-                        <input
-                          type="text"
-                          className="w-full border border-slate-300 rounded p-2 text-xs"
-                          placeholder="e.g. Mathematics Grade 12 - Term 3 Tuition"
-                          value={invDescription}
-                          onChange={(e) => setInvDescription(e.target.value)}
-                          required
-                        />
+                        <h3 className="text-base font-bold text-slate-900">Paystack Gateway &amp; Settlement</h3>
+                        <p className="text-xs text-slate-500">Automated parent debit order, credit card, and instant EFT settlements.</p>
                       </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block font-medium mb-1">Amount (ZAR) *</label>
-                          <input
-                            type="number"
-                            className="w-full border border-slate-300 rounded p-2 text-xs"
-                            value={invAmount}
-                            onChange={(e) => setInvAmount(Number(e.target.value))}
-                            required
-                          />
-                        </div>
-                        <div>
-                          <label className="block font-medium mb-1">Due Date *</label>
-                          <input
-                            type="date"
-                            className="w-full border border-slate-300 rounded p-2 text-xs"
-                            value={invDueDate}
-                            onChange={(e) => setInvDueDate(e.target.value)}
-                            required
-                          />
-                        </div>
-                      </div>
-                      <button type="submit" className="w-full py-2.5 bg-[#b82e2e] text-white font-bold rounded-lg cursor-pointer">
-                        Issue Invoice &bull; Notify Student
-                      </button>
-                    </form>
-                  </div>
-                )}
-
-                {activeSubPage === "all_invoices" && (
-                  <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm">
-                    <div className="px-5 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-                      <h3 className="text-sm font-bold text-slate-900">All Issued Invoices</h3>
-                      <button
-                        onClick={() => navigateTo("finance", "issue_invoice")}
-                        className="px-3 py-1.5 bg-[#b82e2e] text-white text-xs font-bold rounded-lg cursor-pointer"
-                      >
-                        + Issue Invoice
-                      </button>
                     </div>
-                    <table className="w-full text-xs text-left">
-                      <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase text-[11px]">
-                        <tr>
-                          <th className="p-3">Invoice #</th>
-                          <th className="p-3">Student</th>
-                          <th className="p-3">Description</th>
-                          <th className="p-3">Due Date</th>
-                          <th className="p-3">Amount</th>
-                          <th className="p-3">Status</th>
-                          <th className="p-3 text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {invoices.map((inv) => (
-                          <tr key={inv.id}>
-                            <td className="p-3 font-mono font-bold">{inv.invoiceNo}</td>
-                            <td className="p-3 font-medium">{inv.studentName}</td>
-                            <td className="p-3 text-slate-500">{inv.description}</td>
-                            <td className="p-3">{inv.dueDate}</td>
-                            <td className="p-3 font-bold">R {inv.amount.toLocaleString()}</td>
-                            <td className="p-3">
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${inv.status === "paid" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-800"}`}>
-                                {inv.status.toUpperCase()}
-                              </span>
-                            </td>
-                            <td className="p-3 text-right">
-                              <div className="inline-flex gap-1.5">
-                                <button
-                                  onClick={() => printDocument(getDocHtml("student_invoice", { name: inv.studentName, email: inv.studentEmail }))}
-                                  className="px-2.5 py-1 border border-slate-200 rounded font-bold hover:bg-slate-50 cursor-pointer"
-                                >
-                                  Print
-                                </button>
-                                <button
-                                  onClick={() => downloadDocument(getDocHtml("student_invoice", { name: inv.studentName, email: inv.studentEmail }), `${inv.invoiceNo}.html`)}
-                                  className="px-2.5 py-1 border border-slate-200 rounded font-bold hover:bg-slate-50 cursor-pointer"
-                                >
-                                  &darr;
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+
+                    <div className="p-6 bg-slate-50 border border-slate-200 rounded-xl text-center space-y-2">
+                      <p className="text-sm font-bold text-slate-800">
+                        Coming to you after discussion and Paystack setup
+                      </p>
+                      <p className="text-xs text-slate-500 max-w-md mx-auto">
+                        Automated clearing with South African banking rails (ABSA, FNB, Standard Bank, Capitec, Nedbank) will be enabled following gateway account verification.
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -2379,71 +2908,1147 @@ export default function Dashboard() {
 
             {/* --- TEACHER: TIMETABLE --- */}
             {isTeacher && activeDepartment === "timetable" && (
-              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
-                <h3 className="text-sm font-bold text-slate-900">Teaching Calendar &amp; Virtual Lectures</h3>
-                <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg text-xs space-y-2">
-                  <p><strong>Upcoming Live Class:</strong> Mathematics Grade 12 (Calculus Past Paper Review)</p>
-                  <p><strong>Date &amp; Time:</strong> Monday, 15:30 &ndash; 17:00</p>
-                  <a
-                    href="https://meet.google.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-block px-3.5 py-1.5 bg-[#b82e2e] text-white font-bold rounded-lg"
-                  >
-                    Start Google Meet Session &rarr;
-                  </a>
-                </div>
+              <div className="space-y-6">
+                {activeSubPage === "teaching_schedule" && (() => {
+                  const year = calendarMonth.getFullYear();
+                  const month = calendarMonth.getMonth();
+                  const firstDayIndex = new Date(year, month, 1).getDay();
+                  const daysInMonth = new Date(year, month + 1, 0).getDate();
+                  const monthName = calendarMonth.toLocaleDateString("en-ZA", { month: "long", year: "numeric" });
+
+                  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+                  const blanks = Array.from({ length: firstDayIndex }, (_, i) => i);
+
+                  const slotsForSelectedDate = selectedCalendarDate
+                    ? teachingSlots.filter((s) => s.date === selectedCalendarDate)
+                    : [];
+
+                  return (
+                    <div className="space-y-6">
+                      {/* Interactive Calendar Card */}
+                      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-5">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                          <div>
+                            <h3 className="text-base font-black text-slate-900 tracking-tight">
+                              Teaching Schedule &bull; {monthName}
+                            </h3>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              Click any date to view scheduled lessons, add teaching slots, and launch virtual sessions.
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                const prev = new Date(year, month - 1, 1);
+                                setCalendarMonth(prev);
+                              }}
+                              className="w-9 h-9 flex items-center justify-center bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-700 font-bold transition-colors cursor-pointer"
+                              title="Previous Month"
+                            >
+                              &lt;
+                            </button>
+                            <span className="font-extrabold text-xs text-slate-800 px-2 min-w-[120px] text-center">
+                              {monthName}
+                            </span>
+                            <button
+                              onClick={() => {
+                                const next = new Date(year, month + 1, 1);
+                                setCalendarMonth(next);
+                              }}
+                              className="w-9 h-9 flex items-center justify-center bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-700 font-bold transition-colors cursor-pointer"
+                              title="Next Month"
+                            >
+                              &gt;
+                            </button>
+                            <button
+                              onClick={() => setCalendarMonth(new Date(2026, 8, 1))}
+                              className="px-3 py-1.5 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl transition-colors cursor-pointer ml-2"
+                            >
+                              Today
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Calendar Grid */}
+                        <div className="grid grid-cols-7 gap-2 text-center text-xs">
+                          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+                            <div key={d} className="py-2 font-extrabold text-slate-400 uppercase tracking-wider text-[11px]">
+                              {d}
+                            </div>
+                          ))}
+
+                          {blanks.map((b) => (
+                            <div key={`blank-${b}`} className="min-h-[70px] rounded-xl bg-slate-50/50"></div>
+                          ))}
+
+                          {days.map((d) => {
+                            const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+                            const isSelected = selectedCalendarDate === dateStr;
+                            const daySlots = teachingSlots.filter((s) => s.date === dateStr);
+                            const hasSlots = daySlots.length > 0;
+
+                            return (
+                              <button
+                                key={d}
+                                onClick={() => {
+                                  setSelectedCalendarDate(dateStr);
+                                  setNewSlotDate(dateStr);
+                                }}
+                                className={`min-h-[76px] p-2 rounded-xl text-left flex flex-col justify-between border transition-all cursor-pointer ${
+                                  isSelected
+                                    ? "bg-red-50/80 border-[#b82e2e] shadow-xs"
+                                    : hasSlots
+                                    ? "bg-slate-50/80 border-slate-200 hover:border-slate-300"
+                                    : "bg-white border-slate-200/80 hover:bg-slate-50 hover:border-slate-300"
+                                }`}
+                              >
+                                <div className="flex items-center justify-between w-full">
+                                  <span
+                                    className={`text-xs font-extrabold ${
+                                      isSelected ? "text-[#b82e2e]" : hasSlots ? "text-slate-900" : "text-slate-600"
+                                    }`}
+                                  >
+                                    {d}
+                                  </span>
+                                  {hasSlots && (
+                                    <span className="w-2 h-2 rounded-full bg-[#b82e2e]"></span>
+                                  )}
+                                </div>
+                                {hasSlots && (
+                                  <div className="mt-1 space-y-1 w-full">
+                                    {daySlots.slice(0, 2).map((slot) => (
+                                      <div
+                                        key={slot.id}
+                                        className="text-[9.5px] font-bold truncate bg-red-100/70 text-[#b82e2e] px-1.5 py-0.5 rounded"
+                                        title={slot.topic}
+                                      >
+                                        {slot.time.split("-")[0]} {slot.topic}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Selected Day View & Modal Slot Creator */}
+                      {selectedCalendarDate && (
+                        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                            <div>
+                              <h4 className="text-base font-black text-slate-900 tracking-tight">
+                                Teaching Slots for {new Date(selectedCalendarDate + "T00:00:00").toLocaleDateString("en-ZA", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+                              </h4>
+                              <p className="text-xs text-slate-500">
+                                Launch your scheduled virtual lecture directly with your session meeting link.
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => setShowAddSlotModal(true)}
+                                className="px-4 py-2 bg-[#b82e2e] hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                              >
+                                <span>+ Add Teaching Slot</span>
+                              </button>
+                              <button
+                                onClick={() => setSelectedCalendarDate(null)}
+                                className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                              >
+                                &times; Close Day
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Slots List for this Date */}
+                          {slotsForSelectedDate.length === 0 ? (
+                            <div className="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200 space-y-2">
+                              <p className="text-xs font-semibold text-slate-500">
+                                No teaching slots scheduled for this day yet.
+                              </p>
+                              <button
+                                onClick={() => setShowAddSlotModal(true)}
+                                className="text-xs text-[#b82e2e] font-bold hover:underline cursor-pointer"
+                              >
+                                + Click here to add day, time, and topic
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              {slotsForSelectedDate.map((slot) => (
+                                <div
+                                  key={slot.id}
+                                  className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                                >
+                                  <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-blue-50 text-blue-700 border border-blue-200">
+                                        {slot.provider}
+                                      </span>
+                                      <span className="font-mono text-xs font-bold text-[#b82e2e]">
+                                        {slot.time}
+                                      </span>
+                                    </div>
+                                    <p className="font-bold text-slate-900 text-sm">{slot.topic}</p>
+                                    <p className="font-mono text-[11px] text-slate-500 truncate max-w-md">
+                                      {slot.link}
+                                    </p>
+                                  </div>
+
+                                  <a
+                                    href={slot.link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="px-4 py-2 bg-[#b82e2e] hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5 shrink-0"
+                                  >
+                                    <span>Launch {slot.provider} Session &rarr;</span>
+                                  </a>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Add Slot Modal */}
+                      {showAddSlotModal && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+                          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                              <div>
+                                <h3 className="text-base font-bold text-slate-900">Add Teaching Slot</h3>
+                                <p className="text-xs text-slate-500">Add day, time, topic, and session meeting link.</p>
+                              </div>
+                              <button
+                                onClick={() => setShowAddSlotModal(false)}
+                                className="text-slate-400 hover:text-slate-700 text-lg font-bold cursor-pointer"
+                              >
+                                &times;
+                              </button>
+                            </div>
+
+                            <form onSubmit={handleAddTeachingSlot} className="space-y-3.5 text-xs">
+                              <div>
+                                <label className="block font-bold text-slate-700 mb-1">Date *</label>
+                                <input
+                                  type="date"
+                                  value={newSlotDate}
+                                  onChange={(e) => setNewSlotDate(e.target.value)}
+                                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs font-mono focus:outline-none focus:border-[#b82e2e]"
+                                  required
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block font-bold text-slate-700 mb-1">Time Range *</label>
+                                <input
+                                  type="text"
+                                  placeholder="e.g. 15:30 - 17:00"
+                                  value={newSlotTime}
+                                  onChange={(e) => setNewSlotTime(e.target.value)}
+                                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#b82e2e]"
+                                  required
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block font-bold text-slate-700 mb-1">Lesson Topic &amp; Class *</label>
+                                <input
+                                  type="text"
+                                  placeholder="e.g. Grade 12 Mathematics - Exponential Proofs"
+                                  value={newSlotTopic}
+                                  onChange={(e) => setNewSlotTopic(e.target.value)}
+                                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#b82e2e]"
+                                  required
+                                />
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                  <label className="block font-bold text-slate-700 mb-1">Meeting Platform *</label>
+                                  <select
+                                    value={newSlotProvider}
+                                    onChange={(e) =>
+                                      setNewSlotProvider(e.target.value as "Google Meet" | "Zoom" | "Other")
+                                    }
+                                    className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#b82e2e]"
+                                  >
+                                    <option value="Google Meet">Google Meet</option>
+                                    <option value="Zoom">Zoom</option>
+                                    <option value="Other">Other Virtual Link</option>
+                                  </select>
+                                </div>
+
+                                <div>
+                                  <label className="block font-bold text-slate-700 mb-1">Session URL Link *</label>
+                                  <input
+                                    type="url"
+                                    placeholder="https://meet.google.com/..."
+                                    value={newSlotLink}
+                                    onChange={(e) => setNewSlotLink(e.target.value)}
+                                    className="w-full border border-slate-300 rounded-xl p-2.5 text-xs font-mono focus:outline-none focus:border-[#b82e2e]"
+                                    required
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setShowAddSlotModal(false)}
+                                  className="px-4 py-2 border border-slate-200 text-slate-600 font-semibold rounded-xl hover:bg-slate-50 cursor-pointer"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="submit"
+                                  className="px-5 py-2 bg-[#b82e2e] hover:bg-red-700 text-white font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
+                                >
+                                  Save &amp; Activate Slot
+                                </button>
+                              </div>
+                            </form>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* Sub-Tab 2: Venues & Rooms (Custom Hourly Events Table) */}
+                {activeSubPage === "venues" && (
+                  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                      <div>
+                        <h3 className="text-base font-black text-slate-900 tracking-tight">
+                          Venues &amp; Rooms &bull; Tutor Hourly Schedule
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Create and customize your weekly allocation across physical venues and online streaming labs.
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setShowAddVenueModal(true)}
+                        className="px-4 py-2 bg-[#b82e2e] hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5 self-start sm:self-auto"
+                      >
+                        <span>+ Add Venue Slot</span>
+                      </button>
+                    </div>
+
+                    {/* Hourly Grid Table */}
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs text-left border-collapse border border-slate-200">
+                        <thead className="bg-slate-50 text-slate-700 font-extrabold uppercase text-[10.5px] tracking-wider">
+                          <tr>
+                            <th className="p-3 border border-slate-200 w-20 text-center">Time</th>
+                            {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => (
+                              <th key={day} className="p-3 border border-slate-200 min-w-[130px]">
+                                {day}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200">
+                          {["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"].map((hour) => (
+                            <tr key={hour} className="hover:bg-slate-50/50">
+                              <td className="p-2.5 border border-slate-200 font-mono font-bold text-center text-slate-500 bg-slate-50/70">
+                                {hour}
+                              </td>
+                              {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => {
+                                const evs = venueEvents.filter((v) => v.day === day && v.hour === hour);
+                                return (
+                                  <td key={day} className="p-2 border border-slate-200 align-top">
+                                    {evs.length > 0 ? (
+                                      <div className="space-y-1">
+                                        {evs.map((ev) => (
+                                          <div
+                                            key={ev.id}
+                                            className="p-1.5 rounded-lg bg-red-50 border border-red-200 text-[#b82e2e]"
+                                          >
+                                            <p className="font-extrabold text-[10.5px]">{ev.venue}</p>
+                                            <p className="text-[10px] text-slate-700 truncate">{ev.title}</p>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <button
+                                        onClick={() => {
+                                          setNewVenueDay(day);
+                                          setNewVenueHour(hour);
+                                          setShowAddVenueModal(true);
+                                        }}
+                                        className="w-full h-full min-h-[36px] flex items-center justify-center text-slate-300 hover:text-[#b82e2e] hover:bg-slate-100 rounded text-xs transition-colors cursor-pointer"
+                                        title={`Add venue slot for ${day} at ${hour}`}
+                                      >
+                                        +
+                                      </button>
+                                    )}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Add Venue Modal */}
+                    {showAddVenueModal && (
+                      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+                        <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+                          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <div>
+                              <h3 className="text-base font-bold text-slate-900">Schedule Venue Slot</h3>
+                              <p className="text-xs text-slate-500">Allocate day, hour, venue, and subject title.</p>
+                            </div>
+                            <button
+                              onClick={() => setShowAddVenueModal(false)}
+                              className="text-slate-400 hover:text-slate-700 text-lg font-bold cursor-pointer"
+                            >
+                              &times;
+                            </button>
+                          </div>
+
+                          <form onSubmit={handleAddVenueEvent} className="space-y-3 text-xs">
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="block font-bold text-slate-700 mb-1">Day *</label>
+                                <select
+                                  value={newVenueDay}
+                                  onChange={(e) => setNewVenueDay(e.target.value)}
+                                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#b82e2e]"
+                                >
+                                  {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((d) => (
+                                    <option key={d} value={d}>{d}</option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block font-bold text-slate-700 mb-1">Hour *</label>
+                                <select
+                                  value={newVenueHour}
+                                  onChange={(e) => setNewVenueHour(e.target.value)}
+                                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs font-mono focus:outline-none focus:border-[#b82e2e]"
+                                >
+                                  {["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"].map((h) => (
+                                    <option key={h} value={h}>{h}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block font-bold text-slate-700 mb-1">Venue / Room *</label>
+                              <input
+                                type="text"
+                                placeholder="e.g. Room A, Online Studio 1, Science Lab"
+                                value={newVenueName}
+                                onChange={(e) => setNewVenueName(e.target.value)}
+                                className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#b82e2e]"
+                                required
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block font-bold text-slate-700 mb-1">Class / Event Description *</label>
+                              <input
+                                type="text"
+                                placeholder="e.g. Matric Mathematics Tutorial - Calculus"
+                                value={newVenueTitle}
+                                onChange={(e) => setNewVenueTitle(e.target.value)}
+                                className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#b82e2e]"
+                                required
+                              />
+                            </div>
+
+                            <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setShowAddVenueModal(false)}
+                                className="px-4 py-2 border border-slate-200 text-slate-600 font-semibold rounded-xl hover:bg-slate-50 cursor-pointer"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="submit"
+                                className="px-5 py-2 bg-[#b82e2e] hover:bg-red-700 text-white font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
+                              >
+                                Add to Table
+                              </button>
+                            </div>
+                          </form>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
             {/* --- TEACHER: ACADEMIC OVERVIEW --- */}
             {isTeacher && activeDepartment === "academic-overview" && (
-              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
-                <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900">Moodle Learning Management System</h3>
-                    <p className="text-xs text-slate-500">Manage online curriculum materials, quizzes, and gradebooks.</p>
+              <div className="space-y-6">
+                {/* 1. Curriculum Modules */}
+                {activeSubPage === "curriculum" && (
+                  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                      <div>
+                        <h3 className="text-base font-black text-slate-900 tracking-tight">
+                          High School Curriculum Modules (Grade 12 FET Phase)
+                        </h3>
+                        <p className="text-xs text-slate-500">
+                          Accredited DBE &amp; IEB syllabus alignment across 7 secondary subjects.
+                        </p>
+                      </div>
+                      <span className="px-3 py-1 bg-red-50 text-[#b82e2e] text-xs font-bold rounded-lg self-start sm:self-auto">
+                        7 Registered Subjects
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {[
+                        {
+                          code: "MTH-12",
+                          name: "Mathematics (Paper 1 & 2)",
+                          desc: "Differential calculus, polynomial functions, advanced trigonometry, analytical geometry & Euclidean proofs.",
+                          status: "Active Term 1",
+                        },
+                        {
+                          code: "PHY-12",
+                          name: "Physical Sciences (Physics & Chemistry)",
+                          desc: "Newtonian mechanics, work-energy, electrostatics, Doppler effect, organic chemistry & chemical equilibrium.",
+                          status: "Active Term 1",
+                        },
+                        {
+                          code: "LFS-12",
+                          name: "Life Sciences (Biology)",
+                          desc: "DNA structure, meiosis, genetics, endocrine system, homeostasis and human evolution.",
+                          status: "Active Term 1",
+                        },
+                        {
+                          code: "ENG-12",
+                          name: "English Home Language (HL)",
+                          desc: "Literary analysis, Shakespearean drama, prescribed poetry, comprehension and critical essay writing.",
+                          status: "Active Term 1",
+                        },
+                        {
+                          code: "FAL-12",
+                          name: "First Additional Language (FAL)",
+                          desc: "IsiZulu / Afrikaans language structures, literature study, oral presentations and transactional texts.",
+                          status: "Active Term 1",
+                        },
+                        {
+                          code: "LFO-12",
+                          name: "Life Orientation (LO)",
+                          desc: "Career pathways, tertiary study readiness, study skills and physical development.",
+                          status: "Active Term 1",
+                        },
+                        {
+                          code: "ACC-12",
+                          name: "Accounting & Commercial Studies",
+                          desc: "Financial statements, reconciliation, ratio analysis, internal auditing and inventory valuation.",
+                          status: "Active Term 1",
+                        },
+                      ].map((m) => (
+                        <div key={m.code} className="p-4 border border-slate-200 rounded-xl space-y-2 hover:border-slate-300 transition-colors">
+                          <div className="flex items-center justify-between">
+                            <span className="px-2 py-0.5 bg-slate-900 text-white font-mono text-[10px] font-bold rounded">
+                              {m.code}
+                            </span>
+                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                              {m.status}
+                            </span>
+                          </div>
+                          <h4 className="text-sm font-bold text-slate-900">{m.name}</h4>
+                          <p className="text-xs text-slate-500">{m.desc}</p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <a
-                    href="https://moodle.org"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5"
-                  >
-                    <span>Manage in Moodle</span>
-                    <ExternalLinkIcon className="w-3.5 h-3.5" />
-                  </a>
-                </div>
+                )}
+
+                {/* 2. Assessment Marks & Stats */}
+                {activeSubPage === "marks" && (
+                  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                      <div>
+                        <h3 className="text-base font-black text-slate-900 tracking-tight">
+                          Assessment Marks &amp; Academic Stats
+                        </h3>
+                        <p className="text-xs text-slate-500">
+                          Matric continuous diagnostic test scores and SBA benchmark results.
+                        </p>
+                      </div>
+                      <span className="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-lg self-start sm:self-auto">
+                        Academy Average: 81.4%
+                      </span>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs text-left border-collapse">
+                        <thead className="bg-slate-50 text-slate-600 font-bold uppercase text-[10.5px] border-b border-slate-200">
+                          <tr>
+                            <th className="py-3 px-4">Student</th>
+                            <th className="py-3 px-4">Student ID</th>
+                            <th className="py-3 px-4 text-center">Maths P1 Drill</th>
+                            <th className="py-3 px-4 text-center">Physics SBA</th>
+                            <th className="py-3 px-4 text-center">Life Sciences</th>
+                            <th className="py-3 px-4 text-center">English HL</th>
+                            <th className="py-3 px-4 text-right">Overall Mark</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {[
+                            { name: "Olwethuthando Zuma", id: "STU-829104", m1: "92%", m2: "88%", m3: "90%", m4: "85%", ov: "88.8%" },
+                            { name: "Nontobeko Mbawu", id: "STU-294012", m1: "86%", m2: "84%", m3: "82%", m4: "88%", ov: "85.0%" },
+                            { name: "Sipho Dlamini", id: "STU-382910", m1: "78%", m2: "74%", m3: "76%", m4: "80%", ov: "77.0%" },
+                            { name: "Keisha Patel", id: "STU-471029", m1: "94%", m2: "90%", m3: "91%", m4: "89%", ov: "91.0%" },
+                            { name: "Liam Van Der Merwe", id: "STU-592810", m1: "72%", m2: "68%", m3: "70%", m4: "71%", ov: "70.3%" },
+                          ].map((row) => (
+                            <tr key={row.id} className="hover:bg-slate-50">
+                              <td className="py-3 px-4 font-bold text-slate-900">{row.name}</td>
+                              <td className="py-3 px-4 font-mono font-bold text-[#b82e2e]">{row.id}</td>
+                              <td className="py-3 px-4 text-center font-semibold">{row.m1}</td>
+                              <td className="py-3 px-4 text-center font-semibold">{row.m2}</td>
+                              <td className="py-3 px-4 text-center font-semibold">{row.m3}</td>
+                              <td className="py-3 px-4 text-center font-semibold">{row.m4}</td>
+                              <td className="py-3 px-4 text-right font-black text-emerald-700">{row.ov}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. Study Hub Demo (Moodle Build Demo with Video, Syllabus, Notes, and 10-Question Quiz) */}
+                {activeSubPage === "studyhub_demo" && (() => {
+                  const currentQ = EXPONENTIAL_QUIZ_DATA[activeQuizIdx];
+                  const totalQuizMarks = EXPONENTIAL_QUIZ_DATA.reduce((acc, q) => acc + q.marks, 0);
+
+                  const getQuizSidebarColor = (idx: number, status: string, isActive: boolean) => {
+                    let base = "bg-white text-slate-700 hover:bg-slate-50 border-slate-200";
+                    if (isQuizSubmitted) {
+                      const sel = quizSelectedAnswers[idx] || [];
+                      const isCorrect = sel.length === 1 && sel[0] === EXPONENTIAL_QUIZ_DATA[idx].correctAnswers[0];
+                      base = isCorrect
+                        ? "bg-emerald-100 text-emerald-800 border-emerald-300 font-bold"
+                        : "bg-red-100 text-red-800 border-red-300 font-bold";
+                    } else {
+                      if (status === "completed") {
+                        base = "bg-emerald-50 text-emerald-700 border-emerald-300 font-bold";
+                      } else if (status === "not-sure") {
+                        base = "bg-amber-50 text-amber-800 border-amber-300 font-bold";
+                      }
+                    }
+
+                    if (isActive) {
+                      return `${base} ring-2 ring-[#b82e2e] ring-offset-1 font-black`;
+                    }
+                    return base;
+                  };
+
+                  return (
+                    <div className="space-y-6">
+                      {/* Top Classroom Header Banner */}
+                      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-[#1e293b] rounded-2xl p-6 text-white shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-red-500/20 text-red-300 border border-red-500/30">
+                              Study Hub Demo Mode
+                            </span>
+                            <span className="text-xs text-slate-400">Grade 12 Mathematics (DBE / IEB Paper 1)</span>
+                          </div>
+                          <h2 className="text-xl font-black tracking-tight text-white">
+                            Advanced Exponential Relations
+                          </h2>
+                          <p className="text-xs text-slate-300 max-w-2xl">
+                            Topic: Exponential Proofs and Variable Manipulation. Video masterclass, comprehensive theory notes, logic diagrams, and 10-question mastery assessment.
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="px-3 py-1.5 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 rounded-xl text-xs font-bold">
+                            Active Interactive Module
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Main Two-Column Layout: Left Syllabus Topics, Right Active Lesson Content */}
+                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                        {/* Left: Grade 12 Syllabus Topic Roster */}
+                        <div className="lg:col-span-4 space-y-4">
+                          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-3">
+                            <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
+                              Grade 12 Mathematics Syllabus
+                            </h3>
+
+                            <div className="space-y-2 text-xs">
+                              {/* Active Topic */}
+                              <div className="p-3 bg-red-50 border-2 border-[#b82e2e] rounded-xl space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-extrabold text-[#b82e2e] text-[11px] uppercase">
+                                    Topic 1 &bull; Active
+                                  </span>
+                                  <span className="px-2 py-0.5 rounded text-[9.5px] font-bold bg-emerald-100 text-emerald-800">
+                                    AVAILABLE
+                                  </span>
+                                </div>
+                                <p className="font-bold text-slate-900 text-xs">
+                                  Advanced Exponential Relations (Proofs &amp; Manipulation)
+                                </p>
+                                <p className="text-[10px] text-slate-500">Video Masterclass &bull; Mastery Quiz (10 Qs)</p>
+                              </div>
+
+                              {/* Locked Syllabus Topics */}
+                              {[
+                                "Functions & Inverse Functions (Hyperbola, Parabola, Exponential)",
+                                "Differential Calculus & Polynomial Factor Theorem",
+                                "Sequences & Series (Arithmetic, Geometric, Sigma)",
+                                "Financial Mathematics (Annuities, Sinking Funds)",
+                                "Analytical Geometry & Circles (DBE Paper 2)",
+                                "Trigonometry (Compound & Double Angles, Identities)",
+                                "Euclidean Geometry & Proportionality Theorem",
+                                "Statistics & Bivariate Regression Analysis",
+                                "Probability & Fundamental Counting Principles",
+                              ].map((lockedTopic, i) => (
+                                <div
+                                  key={i}
+                                  className="p-3 bg-slate-50/70 border border-slate-200/80 rounded-xl opacity-60 flex items-center justify-between cursor-not-allowed"
+                                >
+                                  <div className="space-y-0.5 pr-2">
+                                    <p className="font-semibold text-slate-700 text-[11px]">{lockedTopic}</p>
+                                    <p className="text-[9.5px] text-slate-400">DBE &amp; IEB Core Syllabus</p>
+                                  </div>
+                                  <span className="px-2 py-0.5 bg-slate-200 text-slate-600 rounded text-[9px] font-bold uppercase tracking-wider shrink-0">
+                                    DEMO LOCKED
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Right: Active Lesson Video, Notes & Mastery Quiz */}
+                        <div className="lg:col-span-8 space-y-6">
+                          {/* Video Masterclass Player */}
+                          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+                            <div className="flex items-center justify-between">
+                              <h3 className="text-sm font-bold text-slate-900">
+                                Video Masterclass: Exponential Proofs &amp; Variable Manipulation
+                              </h3>
+                              <span className="text-[11px] text-slate-500 font-mono">DBE Paper 1 Grade 12</span>
+                            </div>
+
+                            <div className="rounded-xl overflow-hidden bg-black shadow-inner">
+                              <video
+                                controls
+                                className="w-full max-h-[420px] object-contain"
+                                src="/assets/exponential-relations-lesson.mp4"
+                              >
+                                Your browser does not support the video tag.
+                              </video>
+                            </div>
+                            <p className="text-xs text-slate-500">
+                              Watch the step-by-step breakdown of exponential laws applied in reverse to isolate variables and prove non-standard equations.
+                            </p>
+                          </div>
+
+                          {/* Comprehensive Course Notes */}
+                          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-6 text-xs text-slate-700">
+                            <div>
+                              <h3 className="text-base font-black text-slate-900 tracking-tight">
+                                Course Notes: Advanced Exponential Relations
+                              </h3>
+                              <p className="text-xs text-slate-500 mt-0.5">
+                                Topic: Exponential Proofs and Variable Manipulation (Grade 12 CAPS / IEB)
+                              </p>
+                            </div>
+
+                            {/* 1. Fundamentals & Laws */}
+                            <div className="space-y-3">
+                              <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#b82e2e]">
+                                1. Fundamentals &amp; Laws
+                              </h4>
+                              <p>
+                                Before we tackle complex proofs, we must master the foundational rules of exponents. In Grade 12, we often use these laws &quot;backward&quot; or to link different variables together.
+                              </p>
+
+                              <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                                <div>
+                                  <strong className="text-slate-900">&bull; Base:</strong> The number being multiplied (e.g., in <span className="font-mono">k^x</span>, <span className="font-mono">k</span> is the base).
+                                </div>
+                                <div>
+                                  <strong className="text-slate-900">&bull; Exponent (Index):</strong> The power to which the base is raised (e.g., in <span className="font-mono">k^x</span>, <span className="font-mono">x</span> is the exponent).
+                                </div>
+                              </div>
+
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-xs text-left border-collapse border border-slate-200">
+                                  <thead className="bg-slate-50 text-slate-900 font-bold">
+                                    <tr>
+                                      <th className="p-2.5 border border-slate-200">Law Name</th>
+                                      <th className="p-2.5 border border-slate-200 font-mono">Formula</th>
+                                      <th className="p-2.5 border border-slate-200">Verbal Rule</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    <tr>
+                                      <td className="p-2.5 border border-slate-200 font-bold">Product Law</td>
+                                      <td className="p-2.5 border border-slate-200 font-mono text-[#b82e2e]">a^m · a^n = a^(m+n)</td>
+                                      <td className="p-2.5 border border-slate-200">When multiplying the same bases, <strong>add</strong> the exponents.</td>
+                                    </tr>
+                                    <tr>
+                                      <td className="p-2.5 border border-slate-200 font-bold">Quotient Law</td>
+                                      <td className="p-2.5 border border-slate-200 font-mono text-[#b82e2e]">a^m ÷ a^n = a^(m-n)</td>
+                                      <td className="p-2.5 border border-slate-200">When dividing the same bases, <strong>subtract</strong> the exponents.</td>
+                                    </tr>
+                                    <tr>
+                                      <td className="p-2.5 border border-slate-200 font-bold">Power Law</td>
+                                      <td className="p-2.5 border border-slate-200 font-mono text-[#b82e2e]">(a^m)^n = a^(m · n)</td>
+                                      <td className="p-2.5 border border-slate-200">A power raised to another power means <strong>multiply</strong> exponents.</td>
+                                    </tr>
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+
+                            {/* 2. Concept Logic Diagram */}
+                            <div className="space-y-3">
+                              <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#b82e2e]">
+                                2. Concept Logic Diagram
+                              </h4>
+                              <p>
+                                This diagram illustrates the &quot;bridge&quot; between different variables using a common base (k):
+                              </p>
+
+                              <div className="p-5 bg-slate-50 border border-slate-200 rounded-xl space-y-3 text-center">
+                                <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
+                                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                                    <p className="font-bold text-blue-900 text-xs">Branch X (Given)</p>
+                                    <p className="font-mono text-[#b82e2e] font-bold text-xs mt-1">k^(1/x) = 3</p>
+                                  </div>
+                                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+                                    <p className="font-bold text-emerald-900 text-xs">Branch Y (Given)</p>
+                                    <p className="font-mono text-[#b82e2e] font-bold text-xs mt-1">k^(1/y) = 4</p>
+                                  </div>
+                                </div>
+
+                                <div className="text-slate-400 text-base">&darr;</div>
+
+                                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl max-w-md mx-auto">
+                                  <p className="font-bold text-amber-900 text-xs">The &quot;Same-Base&quot; Law</p>
+                                  <p className="font-mono text-slate-800 font-bold text-xs mt-1">
+                                    k^(1/x) · k^(1/y) = k^(1/x + 1/y)
+                                  </p>
+                                </div>
+
+                                <div className="text-slate-400 text-base">&darr;</div>
+
+                                <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl max-w-md mx-auto">
+                                  <p className="font-bold text-purple-900 text-xs">Substitution &amp; Final Result</p>
+                                  <p className="font-mono text-slate-800 text-xs mt-1">
+                                    3 · 4 = 12 &bull; Since 12 = k^(1/w) ⟹ 1/w = 1/x + 1/y
+                                  </p>
+                                  <p className="font-mono text-[#b82e2e] font-extrabold text-sm mt-1">
+                                    w = (xy) / (x + y)
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* 3. Worked Example Proof */}
+                            <div className="space-y-3">
+                              <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#b82e2e]">
+                                3. Worked Example (The Proof)
+                              </h4>
+                              <div className="p-4 bg-slate-900 text-white rounded-xl space-y-2 font-mono text-xs">
+                                <p className="text-amber-300 font-bold">
+                                  Problem: Given k^(1/x) = 3, k^(1/y) = 4, and k^(1/w) = 12. Prove that w = (xy)/(x+y).
+                                </p>
+                                <div className="space-y-1 text-slate-200 pt-1">
+                                  <p><strong>Step 1:</strong> Identify numerical relationship: 3 × 4 = 12</p>
+                                  <p><strong>Step 2:</strong> Substitute exponential forms: k^(1/x) · k^(1/y) = k^(1/w)</p>
+                                  <p><strong>Step 3:</strong> Apply Product Law: k^(1/x + 1/y) = k^(1/w)</p>
+                                  <p><strong>Step 4:</strong> Drop the bases: 1/x + 1/y = 1/w</p>
+                                  <p><strong>Step 5:</strong> Find common denominator: (y + x)/(xy) = 1/w ⟹ <strong>w = (xy)/(x+y) (Q.E.D.)</strong></p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 4. Mastery Quiz (Exact Architecture from src/archive/quiz/page.tsx) */}
+                          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-6">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                              <div>
+                                <h3 className="text-base font-black text-slate-900 tracking-tight">
+                                  4. Mastery Quiz: 10 Questions
+                                </h3>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                  Test your understanding from basic exponential laws to complex matric proofs.
+                                </p>
+                              </div>
+                              {isQuizSubmitted ? (
+                                <div className="flex items-center gap-2">
+                                  <span className="px-3 py-1.5 bg-emerald-50 text-emerald-700 font-extrabold text-xs rounded-xl border border-emerald-200">
+                                    Score: {quizScore} / {totalQuizMarks} marks ({Math.round((quizScore / totalQuizMarks) * 100)}%)
+                                  </span>
+                                  <button
+                                    onClick={handleQuizRetake}
+                                    className="px-3 py-1.5 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                                  >
+                                    Retake Quiz
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={handleQuizSubmit}
+                                  className="px-4 py-2 bg-[#b82e2e] hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
+                                >
+                                  Submit Quiz Assessment
+                                </button>
+                              )}
+                            </div>
+
+                            {/* Top Stepper Button Pills (1 to 10) */}
+                            <div className="flex flex-wrap gap-1.5 pb-2">
+                              {EXPONENTIAL_QUIZ_DATA.map((_, idx) => (
+                                <button
+                                  key={idx}
+                                  onClick={() => setActiveQuizIdx(idx)}
+                                  className={`w-9 h-9 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center ${getQuizSidebarColor(
+                                    idx,
+                                    quizStatuses[idx],
+                                    activeQuizIdx === idx
+                                  )}`}
+                                >
+                                  {idx + 1}
+                                </button>
+                              ))}
+                            </div>
+
+                            {/* Active Question Display Card */}
+                            <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-slate-200 text-slate-700">
+                                    Question {activeQuizIdx + 1} of 10
+                                  </span>
+                                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-blue-50 text-blue-700 border border-blue-200">
+                                    {currentQ.intensity} Intensity
+                                  </span>
+                                </div>
+                                <span className="font-extrabold text-xs text-[#b82e2e]">
+                                  {currentQ.marks} Marks
+                                </span>
+                              </div>
+
+                              <p className="font-bold text-slate-900 text-sm sm:text-base leading-snug">
+                                {currentQ.question}
+                              </p>
+
+                              {/* Options */}
+                              <div className="space-y-2.5 pt-1">
+                                {currentQ.options.map((opt, oIdx) => {
+                                  const isSelected = (quizSelectedAnswers[activeQuizIdx] || []).includes(oIdx);
+                                  const isCorrect = currentQ.correctAnswers.includes(oIdx);
+
+                                  let optColor = "bg-white border-slate-200 text-slate-800 hover:border-slate-300";
+                                  if (isQuizSubmitted) {
+                                    if (isCorrect) {
+                                      optColor = "bg-emerald-50 border-emerald-400 text-emerald-900 font-bold";
+                                    } else if (isSelected && !isCorrect) {
+                                      optColor = "bg-red-50 border-red-300 text-red-900";
+                                    }
+                                  } else if (isSelected) {
+                                    optColor = "bg-red-50 border-[#b82e2e] text-[#b82e2e] font-bold";
+                                  }
+
+                                  return (
+                                    <button
+                                      key={oIdx}
+                                      onClick={() => handleQuizSelectOption(activeQuizIdx, oIdx)}
+                                      disabled={isQuizSubmitted}
+                                      className={`w-full text-left p-3.5 rounded-xl border text-xs flex items-center gap-3 transition-colors cursor-pointer ${optColor}`}
+                                    >
+                                      <div
+                                        className={`w-5 h-5 rounded-full border flex items-center justify-center text-[10px] shrink-0 ${
+                                          isSelected
+                                            ? "border-[#b82e2e] bg-[#b82e2e] text-white"
+                                            : "border-slate-300"
+                                        }`}
+                                      >
+                                        {isSelected ? "✓" : ""}
+                                      </div>
+                                      <span className="font-medium">{opt}</span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+
+                              {/* Actions Bar */}
+                              <div className="flex items-center justify-between pt-3 border-t border-slate-200 text-xs">
+                                <button
+                                  onClick={() => setActiveQuizIdx(Math.max(0, activeQuizIdx - 1))}
+                                  disabled={activeQuizIdx === 0}
+                                  className="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-100 disabled:opacity-30 cursor-pointer font-bold"
+                                >
+                                  &larr; Previous
+                                </button>
+
+                                {!isQuizSubmitted && (
+                                  <button
+                                    onClick={handleQuizMarkNotSure}
+                                    className="px-3 py-1.5 text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg font-bold cursor-pointer"
+                                  >
+                                    Mark as Not Sure
+                                  </button>
+                                )}
+
+                                <button
+                                  onClick={() =>
+                                    setActiveQuizIdx(
+                                      Math.min(EXPONENTIAL_QUIZ_DATA.length - 1, activeQuizIdx + 1)
+                                    )
+                                  }
+                                  disabled={activeQuizIdx === EXPONENTIAL_QUIZ_DATA.length - 1}
+                                  className="px-4 py-1.5 bg-slate-900 text-white rounded-lg hover:bg-black disabled:opacity-30 cursor-pointer font-bold"
+                                >
+                                  Next &rarr;
+                                </button>
+                              </div>
+
+                              {/* Explanations Accordion (Shows in review mode or upon submission) */}
+                              {isQuizSubmitted && (
+                                <div className="mt-4 p-4 bg-emerald-50/70 border border-emerald-200 rounded-xl space-y-1.5 text-xs">
+                                  <div className="flex items-center gap-1.5 font-bold text-emerald-900">
+                                    <span>Explanation &amp; Mathematical Proof:</span>
+                                  </div>
+                                  <p className="text-emerald-950 font-sans leading-relaxed">
+                                    {currentQ.explanation}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
 
             {/* --- TEACHER: ANNOUNCEMENTS --- */}
             {isTeacher && activeDepartment === "announcements" && (
-              <div className="max-w-xl bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
-                <h3 className="text-sm font-bold text-slate-900">Broadcast Institutional Circular</h3>
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    setStatusMessage({ type: "success", text: "Announcement broadcast to all registered students." });
-                  }}
-                  className="space-y-3 text-xs"
-                >
-                  <input
-                    type="text"
-                    className="w-full border border-slate-300 rounded p-2 text-xs"
-                    placeholder="Notice Title (e.g. Saturday Revision Workshop)"
-                    required
-                  />
-                  <textarea
-                    rows={4}
-                    className="w-full border border-slate-300 rounded p-2 text-xs"
-                    placeholder="Notice message and instructions..."
-                    required
-                  />
-                  <button type="submit" className="px-4 py-2 bg-[#b82e2e] text-white font-bold rounded-lg cursor-pointer">
-                    Publish Circular
-                  </button>
-                </form>
+              <div className="space-y-6">
+                {/* 1. Broadcast New Notice Form */}
+                {activeSubPage === "broadcast" && (
+                  <div className="max-w-xl bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+                    <div className="border-b border-slate-100 pb-3">
+                      <h3 className="text-base font-black text-slate-900 tracking-tight">
+                        Broadcast Institutional Circular
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Broadcast official announcements directly to student portals and email channels.
+                      </p>
+                    </div>
+
+                    <form onSubmit={handleBroadcastNotice} className="space-y-3.5 text-xs">
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Notice Title *</label>
+                        <input
+                          type="text"
+                          className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#b82e2e]"
+                          placeholder="e.g. Saturday Matric Mathematics Revision Workshop"
+                          value={broadcastNoticeTitle}
+                          onChange={(e) => setBroadcastNoticeTitle(e.target.value)}
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Target Audience *</label>
+                        <select
+                          className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#b82e2e]"
+                          value={broadcastNoticeAudience}
+                          onChange={(e) => setBroadcastNoticeAudience(e.target.value)}
+                        >
+                          <option value="All 5 Enrolled Students (Grade 12)">All 5 Enrolled Students (Grade 12)</option>
+                          <option value="Active Students Only">Active Students Only</option>
+                          <option value="Parents & Guardians">Parents &amp; Guardians</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Notice Message &amp; Instructions *</label>
+                        <textarea
+                          rows={4}
+                          className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#b82e2e]"
+                          placeholder="Type circular details, revision topics, venue instructions..."
+                          value={broadcastNoticeMessage}
+                          onChange={(e) => setBroadcastNoticeMessage(e.target.value)}
+                          required
+                        />
+                      </div>
+
+                      <div className="pt-2 flex items-center justify-between">
+                        <span className="text-[11px] text-slate-400">
+                          Dispatched via: In-App Student Portal &bull; Instant Email Alert
+                        </span>
+                        <button
+                          type="submit"
+                          className="px-5 py-2.5 bg-[#b82e2e] hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
+                        >
+                          Publish Circular
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+
+                {/* 2. Notice History & Archive */}
+                {activeSubPage === "archive" && (
+                  <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
+                    <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                      <div>
+                        <h3 className="text-base font-black text-slate-900 tracking-tight">
+                          Notice Delivery History &amp; Archive
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Audit history of circulars published to student portals with verification status.
+                        </p>
+                      </div>
+                      <span className="px-3 py-1 bg-slate-100 text-slate-700 text-xs font-bold rounded-lg">
+                        {announcementsHistory.length} Archived Notices
+                      </span>
+                    </div>
+
+                    <div className="divide-y divide-slate-100">
+                      {announcementsHistory.map((item) => (
+                        <div key={item.id} className="p-6 space-y-2 hover:bg-slate-50/50 transition-colors">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <h4 className="text-sm font-bold text-slate-900">{item.title}</h4>
+                            <span className="text-[11px] text-slate-400 font-mono">{item.date}</span>
+                          </div>
+                          <p className="text-xs text-slate-600 leading-relaxed">{item.message}</p>
+                          <div className="pt-2 flex flex-wrap items-center gap-3 text-[11px] text-slate-500">
+                            <span className="font-semibold text-slate-700">
+                              Recipient Audience: <strong className="text-slate-900">{item.recipients}</strong>
+                            </span>
+                            <span>&bull;</span>
+                            <span>Channel: {item.channel}</span>
+                            <span>&bull;</span>
+                            <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                              {item.status}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
