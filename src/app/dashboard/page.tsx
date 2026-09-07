@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -29,46 +29,16 @@ interface Profile {
   student_capacity: number;
 }
 
-interface StudentDocumentItem {
-  id: string;
-  name: string;
-  type: DocumentType | string;
-  status: "Verified" | "Pending" | "Generated";
-  date: string;
-}
-
 interface StudentInvite {
   id: string;
   student_name: string;
   student_email: string;
   invite_code: string;
-  temp_password: string;
+  temp_password?: string;
   status: string;
   created_at: string;
-  preferred_name?: string;
-  dob?: string;
-  gender?: string;
-  id_number?: string;
-  nationality?: string;
   phone?: string;
-  whatsapp?: string;
-  address?: string;
-  guardian_name?: string;
-  guardian_relationship?: string;
-  guardian_phone?: string;
-  guardian_email?: string;
-  emergency_contact?: string;
-  campus_id?: string;
-  faculty?: string;
-  enrolled_modules?: string[];
-  enrolment_date?: string;
-  academic_year?: string;
-  documents?: StudentDocumentItem[];
-  parent_consent?: "Signed" | "Pending";
-  conduct_consent?: "Signed" | "Pending";
-  popia_consent?: "Signed" | "Pending";
 }
-
 interface InvoiceItem {
   id: string;
   invoiceNo: string;
@@ -321,195 +291,9 @@ function LogoutIcon({ className = "w-5 h-5" }: { className?: string }) {
   );
 }
 
-// Available Academic Modules for Curriculum Assignment
-const AVAILABLE_MODULES = [
-  { code: "MTH101", name: "Mathematics Grade 12 (Caps)", credits: "16 Credits", faculty: "Natural & Agricultural Sciences" },
-  { code: "PHY101", name: "Physical Sciences (Physics & Chemistry)", credits: "16 Credits", faculty: "Engineering & Technology" },
-  { code: "LIF101", name: "Life Sciences / Biology", credits: "14 Credits", faculty: "Health Sciences" },
-  { code: "ENG101", name: "English Home Language & Literature", credits: "12 Credits", faculty: "Humanities & Languages" },
-  { code: "CSC101", name: "Computer Applications & Python", credits: "16 Credits", faculty: "Informatics & Computing" },
-  { code: "ACC101", name: "Financial Accounting & Business", credits: "14 Credits", faculty: "Economic & Management Sciences" },
-];
-
-// Rich Sample Data for Institutional Student Profiles
-const DEFAULT_STUDENTS: StudentInvite[] = [
-  {
-    id: "stu-001",
-    student_name: "Lesedi Kgosi",
-    student_email: "lesedi.kgosi@up.ac.za",
-    invite_code: "u23489102",
-    temp_password: "Pass489102!",
-    status: "active",
-    created_at: "2026-01-15T08:00:00.000Z",
-    preferred_name: "Lesedi",
-    dob: "2006-05-14",
-    gender: "Female",
-    id_number: "0605145123088",
-    nationality: "South African",
-    phone: "+27 82 459 1029",
-    whatsapp: "+27 82 459 1029",
-    address: "14 Rosebank Road, Rondebosch, Cape Town, 7700",
-    guardian_name: "Dr. Peter Kgosi",
-    guardian_relationship: "Father",
-    guardian_phone: "+27 83 902 4411",
-    guardian_email: "peter.kgosi@gmail.com",
-    emergency_contact: "+27 83 902 4411 (Dr. Peter Kgosi)",
-    campus_id: "UP-HAT-2026",
-    faculty: "Faculty of Engineering & Built Environment",
-    enrolled_modules: ["MTH101", "PHY101", "CSC101"],
-    enrolment_date: "15 Jan 2026",
-    academic_year: "2026",
-    documents: [
-      { id: "doc-1", name: "Parent Indemnity Agreement (2026)", type: "indemnity_form", status: "Verified", date: "16 Jan 2026" },
-      { id: "doc-2", name: "Student Code of Conduct Pledge", type: "conduct_pledge", status: "Verified", date: "16 Jan 2026" },
-      { id: "doc-3", name: "Proof of Enrolment & Registration", type: "enrolment_letter", status: "Generated", date: "17 Jan 2026" },
-      { id: "doc-4", name: "Certified ID Document / Passport", type: "id_copy", status: "Verified", date: "15 Jan 2026" },
-    ],
-    parent_consent: "Signed",
-    conduct_consent: "Signed",
-    popia_consent: "Signed",
-  },
-  {
-    id: "stu-002",
-    student_name: "Sarah van der Merwe",
-    student_email: "sarah.vdm@up.ac.za",
-    invite_code: "u23881903",
-    temp_password: "Pass881903!",
-    status: "active",
-    created_at: "2026-01-18T09:30:00.000Z",
-    preferred_name: "Sarah",
-    dob: "2006-09-22",
-    gender: "Female",
-    id_number: "0609220088081",
-    nationality: "South African",
-    phone: "+27 71 332 9011",
-    whatsapp: "+27 71 332 9011",
-    address: "42 Hatfield Crescent, Pretoria, Gauteng, 0028",
-    guardian_name: "Annatjie van der Merwe",
-    guardian_relationship: "Mother",
-    guardian_phone: "+27 82 555 1928",
-    guardian_email: "annatjie@vdm.co.za",
-    emergency_contact: "+27 82 555 1928 (Annatjie v/d Merwe)",
-    campus_id: "UP-HAT-2026",
-    faculty: "Faculty of Natural & Agricultural Sciences",
-    enrolled_modules: ["MTH101", "LIF101", "ENG101"],
-    enrolment_date: "18 Jan 2026",
-    academic_year: "2026",
-    documents: [
-      { id: "doc-5", name: "Parent Indemnity Agreement (2026)", type: "indemnity_form", status: "Verified", date: "19 Jan 2026" },
-      { id: "doc-6", name: "Student Code of Conduct Pledge", type: "conduct_pledge", status: "Verified", date: "19 Jan 2026" },
-      { id: "doc-7", name: "Academic Progress Report", type: "progress_report", status: "Generated", date: "20 Jan 2026" },
-    ],
-    parent_consent: "Signed",
-    conduct_consent: "Signed",
-    popia_consent: "Signed",
-  },
-  {
-    id: "stu-003",
-    student_name: "David Sithole",
-    student_email: "david.sithole@up.ac.za",
-    invite_code: "u24019284",
-    temp_password: "Pass019284!",
-    status: "pending",
-    created_at: "2026-02-01T11:15:00.000Z",
-    preferred_name: "Dave",
-    dob: "2007-01-10",
-    gender: "Male",
-    id_number: "0701105928084",
-    nationality: "South African",
-    phone: "+27 60 412 8871",
-    whatsapp: "+27 60 412 8871",
-    address: "88 Jorissen Street, Braamfontein, Johannesburg, 2001",
-    guardian_name: "Bongani Sithole",
-    guardian_relationship: "Father",
-    guardian_phone: "+27 81 229 0041",
-    guardian_email: "b.sithole@telkomsa.net",
-    emergency_contact: "+27 81 229 0041 (Bongani Sithole)",
-    campus_id: "UP-HAT-2026",
-    faculty: "Faculty of Engineering",
-    enrolled_modules: ["MTH101", "PHY101"],
-    enrolment_date: "01 Feb 2026",
-    academic_year: "2026",
-    documents: [
-      { id: "doc-8", name: "Parent Indemnity Agreement (2026)", type: "indemnity_form", status: "Pending", date: "01 Feb 2026" },
-      { id: "doc-9", name: "Student Code of Conduct Pledge", type: "conduct_pledge", status: "Verified", date: "02 Feb 2026" },
-    ],
-    parent_consent: "Pending",
-    conduct_consent: "Signed",
-    popia_consent: "Pending",
-  },
-  {
-    id: "stu-004",
-    student_name: "Nthabiseng Dlamini",
-    student_email: "nthabi.d@up.ac.za",
-    invite_code: "u23901124",
-    temp_password: "Pass901124!",
-    status: "pending",
-    created_at: "2026-02-05T14:20:00.000Z",
-    preferred_name: "Nthabi",
-    dob: "2006-11-03",
-    gender: "Female",
-    id_number: "0611030192087",
-    nationality: "South African",
-    phone: "+27 79 123 4567",
-    whatsapp: "+27 79 123 4567",
-    address: "12 Lynnwood Road, Brooklyn, Pretoria, 0181",
-    guardian_name: "Grace Dlamini",
-    guardian_relationship: "Mother",
-    guardian_phone: "+27 82 991 2233",
-    guardian_email: "grace.d@vodamail.co.za",
-    emergency_contact: "+27 82 991 2233 (Grace Dlamini)",
-    campus_id: "UP-HAT-2026",
-    faculty: "Faculty of Economic & Management Sciences",
-    enrolled_modules: ["ENG101", "ACC101"],
-    enrolment_date: "05 Feb 2026",
-    academic_year: "2026",
-    documents: [
-      { id: "doc-10", name: "Parent Indemnity Agreement (2026)", type: "indemnity_form", status: "Pending", date: "05 Feb 2026" },
-    ],
-    parent_consent: "Pending",
-    conduct_consent: "Pending",
-    popia_consent: "Signed",
-  },
-  {
-    id: "stu-005",
-    student_name: "Michael Naidoo",
-    student_email: "michael.naidoo@up.ac.za",
-    invite_code: "u22109843",
-    temp_password: "Pass109843!",
-    status: "completed",
-    created_at: "2025-01-10T10:00:00.000Z",
-    preferred_name: "Mike",
-    dob: "2005-03-18",
-    gender: "Male",
-    id_number: "0503185291089",
-    nationality: "South African",
-    phone: "+27 84 901 8832",
-    whatsapp: "+27 84 901 8832",
-    address: "25 Musgrave Road, Durban, KwaZulu-Natal, 4001",
-    guardian_name: "Devan Naidoo",
-    guardian_relationship: "Father",
-    guardian_phone: "+27 83 441 9900",
-    guardian_email: "dnaidoo@gmail.com",
-    emergency_contact: "+27 83 441 9900 (Devan Naidoo)",
-    campus_id: "UP-HAT-2025",
-    faculty: "Faculty of Informatics & Computing",
-    enrolled_modules: ["MTH101", "PHY101", "CSC101", "ACC101"],
-    enrolment_date: "10 Jan 2025",
-    academic_year: "2025",
-    documents: [
-      { id: "doc-11", name: "Parent Indemnity Agreement (2025)", type: "indemnity_form", status: "Verified", date: "11 Jan 2025" },
-      { id: "doc-12", name: "Academic Progress Report - Final", type: "progress_report", status: "Generated", date: "15 Dec 2025" },
-    ],
-    parent_consent: "Signed",
-    conduct_consent: "Signed",
-    popia_consent: "Signed",
-  },
-];
-
 // --- Department Navigation Definitions (Static Module-Level) ---
 const TEACHER_TILES = [
-  { id: "students", title: "Students", icon: StudentsIllustrativeIcon, subtitle: "Enrolments, modules & student profiles" },
+  { id: "students", title: "Students", icon: StudentsIllustrativeIcon, subtitle: "Roster, enrollments & student directory" },
   { id: "finance", title: "Finance", icon: FinanceIllustrativeIcon, subtitle: "Fee ledger, billing & Paystack" },
   { id: "documents", title: "Documents", icon: DocumentsIllustrativeIcon, subtitle: "Indemnity forms, conduct & letters" },
   { id: "timetable", title: "Timetable", icon: TimetableIllustrativeIcon, subtitle: "Schedules, sessions & venues" },
@@ -530,13 +314,7 @@ const STUDENT_TILES = [
 // Sub-Navigation Menus INSIDE Each Tile
 const TEACHER_MENUS: Record<string, { id: string; label: string }[]> = {
   students: [
-    { id: "enrolments", label: "1. Enrolments" },
-    { id: "new_enrolment", label: "â†³ New Enrolments" },
-    { id: "pending_enrolments", label: "â†³ Pending Enrolments" },
-    { id: "active_enrolments", label: "â†³ Active Enrolments" },
-    { id: "inactive_enrolments", label: "â†³ Completed / Inactive" },
-    { id: "assign_modules", label: "â†³ Assign to Module/Course" },
-    { id: "student_profiles", label: "3. Student Profiles" },
+    { id: "enrollments", label: "Student Enrollments" },
   ],
   finance: [
     { id: "ledger_overview", label: "Fee Ledger & Accounts" },
@@ -682,9 +460,9 @@ export default function Dashboard() {
   const [profileSurname, setProfileSurname] = useState("");
   const [profilePhone, setProfilePhone] = useState("+27 82 123 4567");
   const [profileIdNumber, setProfileIdNumber] = useState("031120 0827 088");
-  const [profileCampusId, setProfileCampusId] = useState("u23489102");
+  const [profileCampusId, setProfileCampusId] = useState("STU-001");
   const [profileDob, setProfileDob] = useState("2003-11-20");
-  const [profileAddress, setProfileAddress] = useState("Hatfield Campus, Pretoria, Gauteng, 0028");
+  const [profileAddress, setProfileAddress] = useState("Main Campus");
   const [profileEmergencyName, setProfileEmergencyName] = useState("Nomsa Zuma (Parent / Guardian)");
   const [profileEmergencyPhone, setProfileEmergencyPhone] = useState("+27 83 987 6543");
   const [savingProfile, setSavingProfile] = useState(false);
@@ -847,10 +625,10 @@ export default function Dashboard() {
     (type: DocumentType, targetStudent?: Partial<StudentDocData>, notes?: string) => {
       const student: StudentDocData = {
         name: targetStudent?.name || profile?.full_name || "John Doe",
-        studentId: targetStudent?.studentId || "u23489102",
-        email: targetStudent?.email || profile?.email || "student@up.ac.za",
+        studentId: targetStudent?.studentId || "STU-001",
+        email: targetStudent?.email || profile?.email || "student@example.com",
         programme: targetStudent?.programme || "12134002  BSc in Computer Science",
-        address: targetStudent?.address || "Hatfield Campus, Pretoria, Gauteng, 0028",
+        address: targetStudent?.address || "Main Campus",
         enrolledModules: targetStudent?.enrolledModules || ["Mathematics Grade 12", "Physical Sciences Grade 12"],
         monthlyFee: targetStudent?.monthlyFee || 1500,
         totalDebt: targetStudent?.totalDebt || 12000,
@@ -907,47 +685,14 @@ export default function Dashboard() {
             .select("*")
             .order("created_at", { ascending: false });
 
-          if (invData && invData.length > 0) {
-            const merged: StudentInvite[] = invData.map((inv: any) => {
-              const matchingDefault = DEFAULT_STUDENTS.find(
-                (d) => d.student_email === inv.student_email || d.invite_code === inv.invite_code
-              );
-              return {
-                ...matchingDefault,
-                ...inv,
-                enrolled_modules: inv.enrolled_modules || matchingDefault?.enrolled_modules || ["MTH101", "PHY101"],
-                status: inv.status || matchingDefault?.status || "active",
-                documents: matchingDefault?.documents || [
-                  { id: `doc-${inv.id}-1`, name: "Parent Indemnity Agreement (2026)", type: "indemnity_form", status: "Verified", date: "16 Jan 2026" },
-                  { id: `doc-${inv.id}-2`, name: "Student Code of Conduct Pledge", type: "conduct_pledge", status: "Verified", date: "16 Jan 2026" },
-                  { id: `doc-${inv.id}-3`, name: "Proof of Enrolment & Registration", type: "enrolment_letter", status: "Generated", date: "17 Jan 2026" },
-                ],
-                parent_consent: matchingDefault?.parent_consent || "Signed",
-                conduct_consent: matchingDefault?.conduct_consent || "Signed",
-                popia_consent: matchingDefault?.popia_consent || "Signed",
-              };
-            });
-            const existingEmails = new Set(merged.map((m) => m.student_email));
-            const extraDefaults = DEFAULT_STUDENTS.filter((d) => !existingEmails.has(d.student_email));
-            const fullList = [...merged, ...extraDefaults];
-            setInvites(fullList);
-            if (fullList.length > 0) {
-              setDocStudentId(fullList[0].id);
-              setInvStudentId(fullList[0].id);
-              setSelectedProfileStudentId(fullList[0].id);
-              setModuleAssignStudentId(fullList[0].id);
-              setModuleAssignSelected(fullList[0].enrolled_modules || ["MTH101", "PHY101"]);
+          if (invData) {
+            setInvites(invData);
+            if (invData.length > 0) {
+              setDocStudentId(invData[0].id);
+              setInvStudentId(invData[0].id);
             }
-          } else {
-            setInvites(DEFAULT_STUDENTS);
-            setDocStudentId(DEFAULT_STUDENTS[0].id);
-            setInvStudentId(DEFAULT_STUDENTS[0].id);
-            setSelectedProfileStudentId(DEFAULT_STUDENTS[0].id);
-            setModuleAssignStudentId(DEFAULT_STUDENTS[0].id);
-            setModuleAssignSelected(DEFAULT_STUDENTS[0].enrolled_modules || ["MTH101", "PHY101", "CSC101"]);
           }
-        }
-      } catch (err) {
+        }      } catch (err) {
         console.error("Dashboard initialization error:", err);
       } finally {
         setLoading(false);
@@ -1117,58 +862,52 @@ export default function Dashboard() {
     setStatusMessage({ type: "success", text: `Invoice ${newInv.invoiceNo} issued for ${targetStudent.student_name}` });
   };
 
-  const handleSingleEnroll = async (e: React.FormEvent) => {
+  const handleEnrollStudent = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSingleError("");
-    if (!singleName || !singleEmail) {
-      setSingleError("Student Name and Primary Email are required.");
+    setEnrollError("");
+    if (!enrollFirstName.trim() || !enrollSurname.trim() || !enrollEmail.trim()) {
+      setEnrollError("First name, surname, and student email are required.");
       return;
     }
 
-    const generatedNum = singleStudentNumber.trim() || `STU-${Math.floor(100000 + Math.random() * 900000)}`;
+    const fullName = ${enrollFirstName.trim()} ;
+    const generatedCode = enrollStudentNumber.trim() || STU-;
+    const tempPassword = Pass!;
+
     const newStudent: StudentInvite = {
-      id: `stu-${Date.now()}`,
-      student_name: singleName,
-      student_email: singleEmail,
-      invite_code: generatedNum,
-      temp_password: `Pass${Math.floor(1000 + Math.random() * 9000)}!`,
+      id: stu-,
+      student_name: fullName,
+      student_email: enrollEmail.trim(),
+      invite_code: generatedCode,
+      temp_password: tempPassword,
       status: "pending",
       created_at: new Date().toISOString(),
-      preferred_name: singleName.split(" ")[0] || singleName,
-      dob: singleDob || "2007-03-15",
-      gender: singleGender || "Female",
-      id_number: singleIdNumber || "Pending Verification",
-      nationality: "South African",
-      phone: singlePhone || "+27 82 000 0000",
-      whatsapp: singlePhone || "+27 82 000 0000",
-      address: singleAddress || "Gauteng, South Africa",
-      guardian_name: singleGuardianName || "Primary Guardian",
-      guardian_relationship: singleGuardianRelationship || "Parent / Guardian",
-      guardian_phone: singleGuardianPhone || "+27 83 000 0000",
-      guardian_email: singleGuardianEmail || singleEmail,
-      emergency_contact: `${singleGuardianPhone || "+27 83 000 0000"} (${singleGuardianName || "Guardian"})`,
-      campus_id: "UP-HAT-2026",
-      faculty: "Faculty of Natural & Applied Sciences",
-      enrolled_modules: singleSelectedModules.length > 0 ? singleSelectedModules : ["MTH101", "PHY101"],
-      enrolment_date: new Date().toLocaleDateString("en-ZA", { day: "2-digit", month: "short", year: "numeric" }),
-      academic_year: "2026",
-      documents: [
-        { id: `doc-${Date.now()}-1`, name: "Parent Indemnity Agreement (2026)", type: "indemnity_form", status: "Pending", date: new Date().toLocaleDateString("en-ZA") },
-        { id: `doc-${Date.now()}-2`, name: "Student Code of Conduct Pledge", type: "conduct_pledge", status: "Pending", date: new Date().toLocaleDateString("en-ZA") },
-        { id: `doc-${Date.now()}-3`, name: "Proof of Enrolment & Registration", type: "enrolment_letter", status: "Generated", date: new Date().toLocaleDateString("en-ZA") },
-      ],
-      parent_consent: "Pending",
-      conduct_consent: "Pending",
-      popia_consent: "Signed",
+      phone: enrollPhone.trim() || undefined,
     };
 
+    try {
+      if (profile?.id) {
+        await supabase.from("student_invites").insert({
+          teacher_id: profile.id,
+          student_name: fullName,
+          student_email: enrollEmail.trim(),
+          invite_code: generatedCode,
+          temp_password: tempPassword,
+          status: "pending",
+        });
+      }
+    } catch (err) {
+      console.warn("Could not insert invite into Supabase:", err);
+    }
+
     setInvites([newStudent, ...invites]);
-    setSelectedProfileStudentId(newStudent.id);
-    setSingleName("");
-    setSingleEmail("");
-    setSingleStudentNumber("");
-    navigateTo("students", "enrolments");
-    setStatusMessage({ type: "success", text: `${newStudent.student_name} registered under Student No ${newStudent.invite_code}` });
+    setEnrollFirstName("");
+    setEnrollSurname("");
+    setEnrollEmail("");
+    setEnrollPhone("");
+    setEnrollStudentNumber("");
+    setShowEnrollModal(false);
+    setStatusMessage({ type: "success", text: ${fullName} enrolled successfully (Student No: ) });
   };
 
   const handleSpreadsheetTextChange = (text: string) => {
@@ -1196,78 +935,21 @@ export default function Dashboard() {
 
     setImportingBulk(true);
     const newInvites: StudentInvite[] = validRows.map((r, idx) => ({
-      id: `bulk-${Date.now()}-${idx}`,
+      id: ulk--,
       student_name: r.name,
       student_email: r.email,
-      invite_code: `STU-${Math.floor(100000 + Math.random() * 900000)}`,
-      temp_password: `Pass${Math.floor(1000 + Math.random() * 9000)}!`,
+      invite_code: STU-,
+      temp_password: Pass!,
       status: "pending",
       created_at: new Date().toISOString(),
-      preferred_name: r.name.split(" ")[0] || r.name,
-      dob: "2007-01-01",
-      gender: "Unspecified",
-      id_number: "Pending Submission",
-      nationality: "South African",
-      phone: "+27 82 000 0000",
-      whatsapp: "+27 82 000 0000",
-      address: "Pretoria, South Africa",
-      guardian_name: "Parent / Guardian",
-      guardian_relationship: "Parent",
-      guardian_phone: "+27 83 000 0000",
-      guardian_email: r.email,
-      emergency_contact: "+27 83 000 0000",
-      campus_id: "UP-HAT-2026",
-      faculty: "Department of Science & Technology",
-      enrolled_modules: ["MTH101", "PHY101"],
-      enrolment_date: new Date().toLocaleDateString("en-ZA", { day: "2-digit", month: "short", year: "numeric" }),
-      academic_year: "2026",
-      documents: [
-        { id: `doc-bulk-${idx}-1`, name: "Parent Indemnity Agreement (2026)", type: "indemnity_form", status: "Pending", date: new Date().toLocaleDateString("en-ZA") },
-        { id: `doc-bulk-${idx}-2`, name: "Student Code of Conduct Pledge", type: "conduct_pledge", status: "Pending", date: new Date().toLocaleDateString("en-ZA") },
-      ],
-      parent_consent: "Pending",
-      conduct_consent: "Pending",
-      popia_consent: "Signed",
     }));
 
     setInvites([...newInvites, ...invites]);
     setParsedRows([]);
     setSpreadsheetText("");
     setImportingBulk(false);
-    navigateTo("students", "enrolments");
-    setStatusMessage({ type: "success", text: `Successfully registered ${validRows.length} students into Enrolments Hub` });
+    setStatusMessage({ type: "success", text: Successfully registered  students });
   };
-
-  // Quick Action: Update Enrolment Status
-  const handleUpdateStudentStatus = (studentId: string, newStatus: string) => {
-    setInvites((prev) =>
-      prev.map((s) => (s.id === studentId ? { ...s, status: newStatus } : s))
-    );
-    setStatusMessage({ type: "success", text: `Student enrolment status updated to ${newStatus.toUpperCase()}` });
-  };
-
-  // Quick Action: Save Assigned Modules for Student
-  const handleSaveModuleAssignment = () => {
-    setInvites((prev) =>
-      prev.map((s) => (s.id === moduleAssignStudentId ? { ...s, enrolled_modules: moduleAssignSelected } : s))
-    );
-    setStatusMessage({ type: "success", text: `Curriculum modules updated (${moduleAssignSelected.length} assigned)` });
-  };
-
-  // Quick Action: Toggle Module in Assignment Tool
-  const handleToggleModuleAssign = (code: string) => {
-    setModuleAssignSelected((prev) =>
-      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]
-    );
-  };
-
-  // Direct Document Access from Profile
-  const handleOpenStudentDocument = (studentId: string, docType: string) => {
-    setDocStudentId(studentId);
-    navigateTo("documents", docType);
-  };
-
-
   const getInitials = (name: string) => {
     return (name || "SH")
       .split(" ")
@@ -1279,8 +961,8 @@ export default function Dashboard() {
 
   const selectedTeacherStudent = invites.find((i) => i.id === docStudentId) || {
     student_name: "Selected Scholar",
-    invite_code: "u23489102",
-    student_email: "student@up.ac.za",
+    invite_code: "STU-001",
+    student_email: "student@example.com",
   };
 
   if (loading) {
@@ -1667,7 +1349,7 @@ export default function Dashboard() {
                         </div>
                         <div className="flex justify-between text-slate-500">
                           <span>Student Reference:</span>
-                          <span className="font-mono font-bold text-slate-800">u23489102</span>
+                          <span className="font-mono font-bold text-slate-800">STU-001</span>
                         </div>
                       </div>
                       <button
@@ -1691,7 +1373,7 @@ export default function Dashboard() {
                         <p><strong>Account Name:</strong> StudyHub Education (Pty) Ltd</p>
                         <p><strong>Account Number:</strong> 62849201948</p>
                         <p><strong>Branch Code:</strong> 250655</p>
-                        <p><strong>Beneficiary Reference:</strong> <span className="font-mono font-bold text-[#b82e2e]">u23489102</span></p>
+                        <p><strong>Beneficiary Reference:</strong> <span className="font-mono font-bold text-[#b82e2e]">STU-001</span></p>
                       </div>
                     </div>
                   </div>
@@ -1913,7 +1595,7 @@ export default function Dashboard() {
                       </div>
                       <div>
                         <h3 className="text-sm font-bold text-slate-900">{profile.full_name}</h3>
-                        <p className="text-xs text-slate-500 font-mono font-bold text-[#b82e2e]">u23489102</p>
+                        <p className="text-xs text-slate-500 font-mono font-bold text-[#b82e2e]">STU-001</p>
                         <p className="text-[11px] text-slate-400">Grade 12 STEM Academic</p>
                       </div>
                     </div>
@@ -2015,1433 +1697,494 @@ export default function Dashboard() {
             {/* TEACHER WORKSPACE VIEWS                                                   */}
             {/* ========================================================================= */}
 
-            {/* --- TEACHER: STUDENTS (1. ENROLMENTS & 3. STUDENT PROFILES) --- */}
+                        {/* --- TEACHER: STUDENT ENROLLMENTS --- */}
             {isTeacher && activeDepartment === "students" && (() => {
-              const activeCount = invites.filter((i) => i.status === "active").length;
+              const activeCount = invites.filter((i) => i.status === "active" || i.status === "claimed").length;
               const pendingCount = invites.filter((i) => i.status === "pending").length;
-              const inactiveCount = invites.filter((i) => i.status === "completed" || i.status === "inactive").length;
-              
-              const filteredEnrolments = invites.filter((inv) => {
+
+              const filtered = invites.filter((inv) => {
+                const q = studentSearchQuery.toLowerCase().trim();
                 const matchesSearch =
-                  !enrolmentSearchQuery.trim() ||
-                  inv.student_name.toLowerCase().includes(enrolmentSearchQuery.toLowerCase()) ||
-                  inv.invite_code.toLowerCase().includes(enrolmentSearchQuery.toLowerCase()) ||
-                  inv.student_email.toLowerCase().includes(enrolmentSearchQuery.toLowerCase());
-                
+                  !q ||
+                  (inv.student_name || "").toLowerCase().includes(q) ||
+                  (inv.invite_code || "").toLowerCase().includes(q) ||
+                  (inv.student_email || "").toLowerCase().includes(q);
+
                 if (!matchesSearch) return false;
-                if (enrolmentFilterTab === "active") return inv.status === "active";
-                if (enrolmentFilterTab === "pending") return inv.status === "pending";
-                if (enrolmentFilterTab === "inactive") return inv.status === "completed" || inv.status === "inactive";
+                if (studentStatusFilter === "active") return inv.status === "active" || inv.status === "claimed";
+                if (studentStatusFilter === "pending") return inv.status === "pending";
                 return true;
               });
 
-              const selectedProfileStudent =
-                invites.find((i) => i.id === selectedProfileStudentId) || invites[0] || DEFAULT_STUDENTS[0];
-
-              const moduleAssignTarget =
-                invites.find((i) => i.id === moduleAssignStudentId) || selectedProfileStudent;
+              // Helper to get first name and surname
+              const getSplitName = (inv: StudentInvite) => {
+                const raw = (inv.student_name || "").trim();
+                if (raw.includes("@")) {
+                  return { first: raw.split("@")[0], surname: "" };
+                }
+                const parts = raw.split(" ");
+                if (parts.length > 1) {
+                  return { first: parts[0], surname: parts.slice(1).join(" ") };
+                }
+                return { first: raw, surname: "" };
+              };
 
               return (
                 <div className="space-y-6">
-                  {/* Department Top Banner & Quick Sub-Nav Tabs */}
-                  <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  {/* Top Header Banner */}
+                  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                      <div className="flex items-center gap-2">
-                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-red-50 text-[#b82e2e] border border-red-200">
-                          {activeSubPage === "student_profiles" ? "3. Student Profiles" : "1. Enrolments"}
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-red-50 text-[#b82e2e] border border-red-200">
+                          Student Department
                         </span>
-                        <span className="text-xs text-slate-400 font-medium">&bull; Institutional Scholar Directory</span>
+                        <span className="text-xs text-slate-400 font-medium">&bull; {invites.length} Total Enrolled</span>
                       </div>
-                      <h2 className="text-lg font-black text-slate-900 mt-1">
-                        {activeSubPage === "student_profiles"
-                          ? "Individual Student Profiles & Legal Records"
-                          : activeSubPage === "new_enrolment"
-                          ? "New Student Enrolment & Registration"
-                          : activeSubPage === "assign_modules"
-                          ? "Assign Students to Modules & Courses"
-                          : activeSubPage === "pending_enrolments"
-                          ? "Pending Enrolments & Document Approval"
-                          : activeSubPage === "active_enrolments"
-                          ? "Active Student Enrolments Roster"
-                          : activeSubPage === "inactive_enrolments"
-                          ? "Completed & Inactive Enrolments"
-                          : "1. Enrolments Command Hub"}
+                      <h2 className="text-xl font-black text-slate-900 tracking-tight">
+                        Student Enrollments
                       </h2>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Manage registered students, student numbers, admission credentials, and personal details.
+                      </p>
                     </div>
 
-                    {/* Quick Switch Buttons */}
-                    <div className="flex items-center flex-wrap gap-2">
+                    <div className="flex items-center gap-2">
                       <button
-                        onClick={() => navigateTo("students", "enrolments")}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                          activeSubPage === "enrolments" || activeSubPage === "roster"
-                            ? "bg-slate-900 text-white shadow-sm"
-                            : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                        }`}
+                        onClick={() => {
+                          setShowEnrollModal(true);
+                          setShowBulkModal(false);
+                        }}
+                        className="px-4 py-2 bg-[#b82e2e] hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
                       >
-                        1. Enrolments
+                        <span>+ Enrol New Student</span>
                       </button>
                       <button
-                        onClick={() => navigateTo("students", "new_enrolment")}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                          activeSubPage === "new_enrolment"
-                            ? "bg-[#b82e2e] text-white shadow-sm"
-                            : "bg-red-50 text-[#b82e2e] hover:bg-red-100 border border-red-200"
-                        }`}
+                        onClick={() => {
+                          setShowBulkModal(!showBulkModal);
+                          setShowEnrollModal(false);
+                        }}
+                        className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-colors cursor-pointer"
                       >
-                        + New Enrolment
-                      </button>
-                      <button
-                        onClick={() => navigateTo("students", "assign_modules")}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                          activeSubPage === "assign_modules"
-                            ? "bg-slate-900 text-white shadow-sm"
-                            : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                        }`}
-                      >
-                        Assign Modules
-                      </button>
-                      <button
-                        onClick={() => navigateTo("students", "student_profiles")}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                          activeSubPage === "student_profiles"
-                            ? "bg-[#b82e2e] text-white shadow-sm"
-                            : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                        }`}
-                      >
-                        3. Student Profiles
+                        {showBulkModal ? "Close Import" : "Import Spreadsheet"}
                       </button>
                     </div>
                   </div>
 
-                  {/* ========================================================================= */}
-                  {/* VIEW 1: ENROLMENTS COMMAND HUB (or roster)                                */}
-                  {/* ========================================================================= */}
-                  {(activeSubPage === "enrolments" || activeSubPage === "roster") && (
-                    <div className="space-y-6">
-                      {/* KPI Summary Cards */}
-                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div
-                          onClick={() => setEnrolmentFilterTab("all")}
-                          className={`bg-white border rounded-2xl p-4.5 cursor-pointer transition-all shadow-xs ${
-                            enrolmentFilterTab === "all" ? "border-slate-900 ring-2 ring-slate-900/10" : "border-slate-200 hover:border-slate-300"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Enrolled</span>
-                            <span className="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
-                          </div>
-                          <p className="text-2xl font-black text-slate-900 mt-2">{invites.length}</p>
-                          <p className="text-[11px] text-slate-400 mt-0.5">All registered scholars</p>
+                  {/* Bulk Spreadsheet Import Form (Collapsible) */}
+                  {showBulkModal && (
+                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <div>
+                          <h3 className="text-sm font-bold text-slate-900">Bulk Spreadsheet Enrolment</h3>
+                          <p className="text-xs text-slate-500">Paste student names and emails, or upload a CSV / Excel file.</p>
                         </div>
-
-                        <div
-                          onClick={() => {
-                            setEnrolmentFilterTab("active");
-                            navigateTo("students", "active_enrolments");
-                          }}
-                          className={`bg-white border rounded-2xl p-4.5 cursor-pointer transition-all shadow-xs ${
-                            enrolmentFilterTab === "active" ? "border-emerald-600 ring-2 ring-emerald-500/10" : "border-slate-200 hover:border-slate-300"
-                          }`}
+                        <button
+                          onClick={() => setShowBulkModal(false)}
+                          className="text-slate-400 hover:text-slate-700 text-sm font-bold cursor-pointer"
                         >
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">Active Enrolments</span>
-                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                          </div>
-                          <p className="text-2xl font-black text-emerald-700 mt-2">{activeCount}</p>
-                          <p className="text-[11px] text-emerald-600 mt-0.5">Cleared & participating</p>
-                        </div>
-
-                        <div
-                          onClick={() => {
-                            setEnrolmentFilterTab("pending");
-                            navigateTo("students", "pending_enrolments");
-                          }}
-                          className={`bg-white border rounded-2xl p-4.5 cursor-pointer transition-all shadow-xs ${
-                            enrolmentFilterTab === "pending" ? "border-amber-500 ring-2 ring-amber-500/10" : "border-slate-200 hover:border-slate-300"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-amber-700 uppercase tracking-wider">Pending Review</span>
-                            <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-                          </div>
-                          <p className="text-2xl font-black text-amber-700 mt-2">{pendingCount}</p>
-                          <p className="text-[11px] text-amber-600 mt-0.5">Awaiting docs / consent</p>
-                        </div>
-
-                        <div
-                          onClick={() => {
-                            setEnrolmentFilterTab("inactive");
-                            navigateTo("students", "inactive_enrolments");
-                          }}
-                          className={`bg-white border rounded-2xl p-4.5 cursor-pointer transition-all shadow-xs ${
-                            enrolmentFilterTab === "inactive" ? "border-slate-600 ring-2 ring-slate-500/10" : "border-slate-200 hover:border-slate-300"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">Completed / Inactive</span>
-                            <span className="w-2.5 h-2.5 rounded-full bg-slate-300"></span>
-                          </div>
-                          <p className="text-2xl font-black text-slate-700 mt-2">{inactiveCount}</p>
-                          <p className="text-[11px] text-slate-500 mt-0.5">Alumni & withdrawn</p>
-                        </div>
+                          &times;
+                        </button>
                       </div>
 
-                      {/* 6 Inner Launchpad Action Cards (Inside the Tile) */}
-                      <div>
-                        <div className="flex items-center justify-between mb-3 px-1">
-                          <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
-                            Enrolment Management Hub & Workflows
-                          </h3>
-                          <span className="text-xs text-slate-400">Select an action or manage master records below</span>
-                        </div>
+                      <textarea
+                        rows={5}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-mono focus:outline-none focus:border-[#b82e2e]"
+                        placeholder="John Doe, john@example.com&#10;Sarah Smith, sarah@example.com"
+                        value={spreadsheetText}
+                        onChange={(e) => handleSpreadsheetTextChange(e.target.value)}
+                      />
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {/* Tile 1: New Enrolments */}
-                          <div
-                            onClick={() => navigateTo("students", "new_enrolment")}
-                            className="bg-white border border-slate-200 rounded-2xl p-4.5 hover:border-[#b82e2e] hover:shadow-md transition-all cursor-pointer group"
-                          >
-                            <div className="w-10 h-10 rounded-xl bg-red-50 text-[#b82e2e] flex items-center justify-center font-bold text-lg mb-3 group-hover:scale-105 transition-transform">
-                              âž•
-                            </div>
-                            <h4 className="text-sm font-bold text-slate-900 group-hover:text-[#b82e2e] transition-colors">
-                              New Enrolments
-                            </h4>
-                            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                              Register single students or bulk-import via CSV/Excel spreadsheets.
-                            </p>
-                            <span className="inline-block mt-3 text-xs font-bold text-[#b82e2e]">
-                              Open Registration Form &rarr;
-                            </span>
-                          </div>
-
-                          {/* Tile 2: Pending Enrolments */}
-                          <div
-                            onClick={() => navigateTo("students", "pending_enrolments")}
-                            className="bg-white border border-slate-200 rounded-2xl p-4.5 hover:border-amber-500 hover:shadow-md transition-all cursor-pointer group"
-                          >
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold text-lg group-hover:scale-105 transition-transform">
-                                â³
-                              </div>
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800">
-                                {pendingCount} Pending
-                              </span>
-                            </div>
-                            <h4 className="text-sm font-bold text-slate-900 group-hover:text-amber-700 transition-colors">
-                              Pending Enrolments
-                            </h4>
-                            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                              Review admissions awaiting ID verification, indemnity forms, or payment.
-                            </p>
-                            <span className="inline-block mt-3 text-xs font-bold text-amber-700">
-                              Review Pending &rarr;
-                            </span>
-                          </div>
-
-                          {/* Tile 3: Active Enrolments */}
-                          <div
-                            onClick={() => navigateTo("students", "active_enrolments")}
-                            className="bg-white border border-slate-200 rounded-2xl p-4.5 hover:border-emerald-600 hover:shadow-md transition-all cursor-pointer group"
-                          >
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-lg group-hover:scale-105 transition-transform">
-                                ðŸŽ“
-                              </div>
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800">
-                                {activeCount} Active
-                              </span>
-                            </div>
-                            <h4 className="text-sm font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">
-                              Active Enrolments
-                            </h4>
-                            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                              Manage active registered students, attendances, and academic standings.
-                            </p>
-                            <span className="inline-block mt-3 text-xs font-bold text-emerald-700">
-                              View Active Roster &rarr;
-                            </span>
-                          </div>
-
-                          {/* Tile 4: Completed / Inactive */}
-                          <div
-                            onClick={() => navigateTo("students", "inactive_enrolments")}
-                            className="bg-white border border-slate-200 rounded-2xl p-4.5 hover:border-slate-400 hover:shadow-md transition-all cursor-pointer group"
-                          >
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-lg group-hover:scale-105 transition-transform">
-                                ðŸ“
-                              </div>
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-700">
-                                {inactiveCount} Inactive
-                              </span>
-                            </div>
-                            <h4 className="text-sm font-bold text-slate-900 group-hover:text-slate-800 transition-colors">
-                              Completed / Inactive
-                            </h4>
-                            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                              Historical records for graduated alumni and withdrawn enrolments.
-                            </p>
-                            <span className="inline-block mt-3 text-xs font-bold text-slate-600">
-                              Access Archives &rarr;
-                            </span>
-                          </div>
-
-                          {/* Tile 5: Assign student to module/course */}
-                          <div
-                            onClick={() => navigateTo("students", "assign_modules")}
-                            className="bg-white border border-slate-200 rounded-2xl p-4.5 hover:border-blue-600 hover:shadow-md transition-all cursor-pointer group"
-                          >
-                            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold text-lg mb-3 group-hover:scale-105 transition-transform">
-                              ðŸ“š
-                            </div>
-                            <h4 className="text-sm font-bold text-slate-900 group-hover:text-blue-700 transition-colors">
-                              Assign to Module / Course
-                            </h4>
-                            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                              Allocate curriculum modules, timetable groups, and subject credits.
-                            </p>
-                            <span className="inline-block mt-3 text-xs font-bold text-blue-700">
-                              Open Module Assigner &rarr;
-                            </span>
-                          </div>
-
-                          {/* Tile 6: 3. Student Profiles */}
-                          <div
-                            onClick={() => navigateTo("students", "student_profiles")}
-                            className="bg-white border border-slate-200 rounded-2xl p-4.5 hover:border-[#b82e2e] hover:shadow-md transition-all cursor-pointer group"
-                          >
-                            <div className="w-10 h-10 rounded-xl bg-red-50 text-[#b82e2e] flex items-center justify-center font-bold text-lg mb-3 group-hover:scale-105 transition-transform">
-                              ðŸªª
-                            </div>
-                            <h4 className="text-sm font-bold text-slate-900 group-hover:text-[#b82e2e] transition-colors">
-                              3. Student Profiles
-                            </h4>
-                            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                              View individual profiles: personal, contact, guardian, docs & consent status.
-                            </p>
-                            <span className="inline-block mt-3 text-xs font-bold text-[#b82e2e]">
-                              Inspect Student Profiles &rarr;
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Master Enrolments Roster Table */}
-                      <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-xs">
-                        <div className="px-5 py-4 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                          <div>
-                            <h3 className="text-sm font-bold text-slate-900">
-                              Enrolments Directory ({filteredEnrolments.length} Scholars)
-                            </h3>
-                            <p className="text-xs text-slate-500">Live institutional enrolment ledger with quick actions</p>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="text"
-                              placeholder="Search by name, student no, or email..."
-                              value={enrolmentSearchQuery}
-                              onChange={(e) => setEnrolmentSearchQuery(e.target.value)}
-                              className="px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs w-56 sm:w-64 focus:outline-none focus:border-[#b82e2e]"
-                            />
-                            <button
-                              onClick={() => navigateTo("students", "new_enrolment")}
-                              className="px-3 py-1.5 bg-[#b82e2e] text-white font-bold text-xs rounded-xl hover:bg-red-700 transition-colors cursor-pointer shadow-xs shrink-0"
-                            >
-                              + Enrol Student
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Filter Tabs */}
-                        <div className="flex items-center gap-2 px-5 py-2.5 bg-white border-b border-slate-100 text-xs">
-                          <span className="text-slate-400 font-semibold mr-1">Filter:</span>
-                          <button
-                            onClick={() => setEnrolmentFilterTab("all")}
-                            className={`px-2.5 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
-                              enrolmentFilterTab === "all" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"
-                            }`}
-                          >
-                            All ({invites.length})
-                          </button>
-                          <button
-                            onClick={() => setEnrolmentFilterTab("active")}
-                            className={`px-2.5 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
-                              enrolmentFilterTab === "active" ? "bg-emerald-600 text-white" : "text-emerald-700 hover:bg-emerald-50"
-                            }`}
-                          >
-                            Active ({activeCount})
-                          </button>
-                          <button
-                            onClick={() => setEnrolmentFilterTab("pending")}
-                            className={`px-2.5 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
-                              enrolmentFilterTab === "pending" ? "bg-amber-600 text-white" : "text-amber-700 hover:bg-amber-50"
-                            }`}
-                          >
-                            Pending ({pendingCount})
-                          </button>
-                          <button
-                            onClick={() => setEnrolmentFilterTab("inactive")}
-                            className={`px-2.5 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
-                              enrolmentFilterTab === "inactive" ? "bg-slate-700 text-white" : "text-slate-600 hover:bg-slate-100"
-                            }`}
-                          >
-                            Completed/Inactive ({inactiveCount})
-                          </button>
-                        </div>
-
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-xs text-left">
-                            <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase text-[11px]">
-                              <tr>
-                                <th className="py-3 px-4">Student & Campus ID</th>
-                                <th className="py-3 px-4">Contact Details</th>
-                                <th className="py-3 px-4">Enrolled Modules</th>
-                                <th className="py-3 px-4">Enrolment Status</th>
-                                <th className="py-3 px-4">Consent Status</th>
-                                <th className="py-3 px-4 text-right">Actions</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                              {filteredEnrolments.map((inv) => (
-                                <tr key={inv.id} className="hover:bg-slate-50/70 transition-colors">
-                                  <td className="py-3 px-4">
-                                    <div className="flex items-center gap-3">
-                                      <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-800 font-bold flex items-center justify-center text-xs shrink-0">
-                                        {getInitials(inv.student_name)}
-                                      </div>
-                                      <div>
-                                        <p className="font-bold text-slate-900 hover:text-[#b82e2e] cursor-pointer"
-                                          onClick={() => {
-                                            setSelectedProfileStudentId(inv.id);
-                                            navigateTo("students", "student_profiles");
-                                          }}
-                                        >
-                                          {inv.student_name}
-                                        </p>
-                                        <p className="font-mono text-[#b82e2e] font-bold text-[11px]">{inv.invite_code}</p>
-                                      </div>
-                                    </div>
-                                  </td>
-                                  <td className="py-3 px-4 text-slate-600">
-                                    <p className="font-medium">{inv.student_email}</p>
-                                    <p className="text-[11px] text-slate-400">{inv.phone || "+27 82 000 0000"}</p>
-                                  </td>
-                                  <td className="py-3 px-4">
-                                    <div className="flex flex-wrap gap-1">
-                                      {(inv.enrolled_modules && inv.enrolled_modules.length > 0
-                                        ? inv.enrolled_modules
-                                        : ["MTH101", "PHY101"]
-                                      ).map((mod) => (
-                                        <span key={mod} className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-mono text-[10px] font-bold border border-slate-200">
-                                          {mod}
-                                        </span>
-                                      ))}
-                                    </div>
-                                  </td>
-                                  <td className="py-3 px-4">
-                                    {inv.status === "active" ? (
-                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                        ACTIVE
-                                      </span>
-                                    ) : inv.status === "pending" ? (
-                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-50 text-amber-700 border border-amber-200">
-                                        PENDING
-                                      </span>
-                                    ) : (
-                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-600 border border-slate-200">
-                                        COMPLETED
-                                      </span>
-                                    )}
-                                  </td>
-                                  <td className="py-3 px-4">
-                                    <div className="flex items-center gap-1.5 text-[11px]">
-                                      <span className={`w-2 h-2 rounded-full ${inv.parent_consent === "Signed" ? "bg-emerald-500" : "bg-amber-400"}`}></span>
-                                      <span className="text-slate-600 font-medium">
-                                        Parent: {inv.parent_consent || "Signed"}
-                                      </span>
-                                    </div>
-                                  </td>
-                                  <td className="py-3 px-4 text-right space-x-1.5 whitespace-nowrap">
-                                    <button
-                                      onClick={() => {
-                                        setSelectedProfileStudentId(inv.id);
-                                        navigateTo("students", "student_profiles");
-                                      }}
-                                      className="px-2.5 py-1 bg-white border border-slate-200 hover:border-[#b82e2e] hover:text-[#b82e2e] rounded-lg text-slate-700 font-bold text-xs cursor-pointer transition-colors shadow-2xs"
-                                    >
-                                      View Profile &rarr;
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        setModuleAssignStudentId(inv.id);
-                                        setModuleAssignSelected(inv.enrolled_modules || ["MTH101", "PHY101"]);
-                                        navigateTo("students", "assign_modules");
-                                      }}
-                                      className="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 font-medium text-xs cursor-pointer transition-colors"
-                                      title="Assign Modules"
-                                    >
-                                      Modules
-                                    </button>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+                        <button
+                          onClick={downloadSampleCsvTemplate}
+                          className="text-xs text-[#b82e2e] hover:underline font-bold cursor-pointer text-left"
+                        >
+                          Download Sample Template (.csv)
+                        </button>
+                        <button
+                          onClick={() => {
+                            handleExecuteBulkImport();
+                            setShowBulkModal(false);
+                          }}
+                          disabled={parsedRows.length === 0 || importingBulk}
+                          className="px-5 py-2 bg-slate-900 hover:bg-black disabled:opacity-40 text-white text-xs font-bold rounded-xl cursor-pointer transition-colors shadow-xs"
+                        >
+                          Register {parsedRows.length} Students
+                        </button>
                       </div>
                     </div>
                   )}
 
-                  {/* ========================================================================= */}
-                  {/* VIEW 2: NEW ENROLMENTS (Single & Bulk)                                    */}
-                  {/* ========================================================================= */}
-                  {activeSubPage === "new_enrolment" && (
-                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-6 max-w-3xl">
-                      {/* Tabs */}
-                      <div className="flex border-b border-slate-200">
-                        <button
-                          onClick={() => setNewEnrolTab("single")}
-                          className={`py-3 px-5 text-xs font-extrabold border-b-2 transition-colors cursor-pointer ${
-                            newEnrolTab === "single"
-                              ? "border-[#b82e2e] text-[#b82e2e]"
-                              : "border-transparent text-slate-500 hover:text-slate-900"
-                          }`}
-                        >
-                          Single Student Registration
-                        </button>
-                        <button
-                          onClick={() => setNewEnrolTab("bulk")}
-                          className={`py-3 px-5 text-xs font-extrabold border-b-2 transition-colors cursor-pointer ${
-                            newEnrolTab === "bulk"
-                              ? "border-[#b82e2e] text-[#b82e2e]"
-                              : "border-transparent text-slate-500 hover:text-slate-900"
-                          }`}
-                        >
-                          Bulk Spreadsheet Import
-                        </button>
-                      </div>
+                  {/* Search, Filter Pills & Counter Bar */}
+                  <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        placeholder="Search by name, surname, student no, or email..."
+                        value={studentSearchQuery}
+                        onChange={(e) => setStudentSearchQuery(e.target.value)}
+                        className="px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs w-64 sm:w-80 focus:outline-none focus:border-[#b82e2e]"
+                      />
+                    </div>
 
-                      {newEnrolTab === "single" && (
-                        <form onSubmit={handleSingleEnroll} className="space-y-5 text-xs">
-                          {singleError && (
-                            <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl font-bold">
-                              {singleError}
-                            </div>
+                    {/* Filter Pills */}
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <span className="text-slate-400 font-medium mr-1 text-[11px]">Filter:</span>
+                      <button
+                        onClick={() => setStudentStatusFilter("all")}
+                        className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                          studentStatusFilter === "all" ? "bg-slate-900 text-white shadow-2xs" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                        }`}
+                      >
+                        All ({invites.length})
+                      </button>
+                      <button
+                        onClick={() => setStudentStatusFilter("active")}
+                        className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                          studentStatusFilter === "active" ? "bg-emerald-600 text-white shadow-2xs" : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200"
+                        }`}
+                      >
+                        Active ({activeCount})
+                      </button>
+                      <button
+                        onClick={() => setStudentStatusFilter("pending")}
+                        className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                          studentStatusFilter === "pending" ? "bg-amber-600 text-white shadow-2xs" : "bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200"
+                        }`}
+                      >
+                        Pending ({pendingCount})
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Enrollments Table */}
+                  <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs text-left">
+                        <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase text-[11px]">
+                          <tr>
+                            <th className="py-3 px-4">Student Name &amp; Surname</th>
+                            <th className="py-3 px-4">Student Number</th>
+                            <th className="py-3 px-4">Student Email</th>
+                            <th className="py-3 px-4">Phone / Contact</th>
+                            <th className="py-3 px-4">Enrolment Date</th>
+                            <th className="py-3 px-4">Status</th>
+                            <th className="py-3 px-4 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {filtered.map((inv) => {
+                            const { first, surname } = getSplitName(inv);
+                            const isPending = inv.status === "pending";
+                            return (
+                              <tr key={inv.id} className="hover:bg-slate-50/70 transition-colors">
+                                <td className="py-3.5 px-4">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 rounded-full bg-slate-200 text-slate-800 font-bold flex items-center justify-center text-xs shrink-0 ring-2 ring-white">
+                                      {getInitials(inv.student_name)}
+                                    </div>
+                                    <div>
+                                      <p className="font-bold text-slate-900 text-xs">{inv.student_name}</p>
+                                      {surname ? (
+                                        <p className="text-[11px] text-slate-500">
+                                          Name: <span className="font-medium text-slate-700">{first}</span> &bull; Surname: <span className="font-medium text-slate-700">{surname}</span>
+                                        </p>
+                                      ) : null}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="py-3.5 px-4">
+                                  <span className="font-mono font-bold text-[#b82e2e] bg-red-50 px-2 py-0.5 rounded border border-red-100">
+                                    {inv.invite_code}
+                                  </span>
+                                </td>
+                                <td className="py-3.5 px-4 text-slate-700 font-medium">
+                                  {inv.student_email}
+                                </td>
+                                <td className="py-3.5 px-4 text-slate-500">
+                                  {inv.phone || "-"}
+                                </td>
+                                <td className="py-3.5 px-4 text-slate-500 text-[11px]">
+                                  {new Date(inv.created_at || Date.now()).toLocaleDateString("en-ZA", {
+                                    day: "2-digit",
+                                    month: "short",
+                                    year: "numeric",
+                                  })}
+                                </td>
+                                <td className="py-3.5 px-4">
+                                  <span
+                                    className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                                      isPending
+                                        ? "bg-amber-50 text-amber-700 border border-amber-200"
+                                        : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                    }`}
+                                  >
+                                    {isPending ? "Pending" : "Active"}
+                                  </span>
+                                </td>
+                                <td className="py-3.5 px-4 text-right space-x-1.5 whitespace-nowrap">
+                                  <button
+                                    onClick={() => setSelectedDetailStudent(inv)}
+                                    className="px-2.5 py-1 bg-white border border-slate-200 hover:border-[#b82e2e] hover:text-[#b82e2e] text-slate-700 rounded-lg font-bold text-xs cursor-pointer transition-colors shadow-2xs"
+                                  >
+                                    View Details
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setDocStudentId(inv.id);
+                                      navigateTo("documents", "indemnity_form");
+                                    }}
+                                    className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium text-xs cursor-pointer transition-colors"
+                                  >
+                                    Docs
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+
+                          {filtered.length === 0 && (
+                            <tr>
+                              <td colSpan={7} className="py-12 text-center text-slate-400 text-xs">
+                                {studentSearchQuery
+                                  ? `No students found matching "${studentSearchQuery}".`
+                                  : "No student enrollments found. Click '+ Enrol New Student' to register your first student."}
+                              </td>
+                            </tr>
                           )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
 
-                          {/* Section A: Student Personal Details */}
-                          <div className="space-y-3">
-                            <h4 className="text-xs font-black uppercase text-slate-500 tracking-wider">
-                              A. Personal & Academic Identification
-                            </h4>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              <div>
-                                <label className="block font-bold text-slate-700 mb-1">Student Full Name *</label>
-                                <input
-                                  type="text"
-                                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#b82e2e]"
-                                  placeholder="e.g. Sipho Ndlovu"
-                                  value={singleName}
-                                  onChange={(e) => setSingleName(e.target.value)}
-                                  required
-                                />
-                              </div>
+                  {/* Single Enrolment Modal */}
+                  {showEnrollModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+                      <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-4">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                          <div>
+                            <h3 className="text-base font-bold text-slate-900">Enrol New Student</h3>
+                            <p className="text-xs text-slate-500">Add student details and generate enrolment credentials</p>
+                          </div>
+                          <button
+                            onClick={() => setShowEnrollModal(false)}
+                            className="text-slate-400 hover:text-slate-700 text-lg font-bold cursor-pointer"
+                          >
+                            &times;
+                          </button>
+                        </div>
 
-                              <div>
-                                <label className="block font-bold text-slate-700 mb-1">Student Number (or Leave Auto)</label>
-                                <input
-                                  type="text"
-                                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs font-mono text-[#b82e2e] font-bold focus:outline-none focus:border-[#b82e2e]"
-                                  placeholder="e.g. u23984102"
-                                  value={singleStudentNumber}
-                                  onChange={(e) => setSingleStudentNumber(e.target.value)}
-                                />
-                              </div>
+                        {enrollError && (
+                          <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl font-bold">
+                            {enrollError}
+                          </div>
+                        )}
 
-                              <div>
-                                <label className="block font-bold text-slate-700 mb-1">Student Email Address *</label>
-                                <input
-                                  type="email"
-                                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#b82e2e]"
-                                  placeholder="e.g. sipho.n@up.ac.za"
-                                  value={singleEmail}
-                                  onChange={(e) => setSingleEmail(e.target.value)}
-                                  required
-                                />
-                              </div>
-
-                              <div>
-                                <label className="block font-bold text-slate-700 mb-1">Mobile Contact / WhatsApp</label>
-                                <input
-                                  type="tel"
-                                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#b82e2e]"
-                                  placeholder="+27 82 000 0000"
-                                  value={singlePhone}
-                                  onChange={(e) => setSinglePhone(e.target.value)}
-                                />
-                              </div>
-
-                              <div>
-                                <label className="block font-bold text-slate-700 mb-1">Date of Birth</label>
-                                <input
-                                  type="date"
-                                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#b82e2e]"
-                                  value={singleDob}
-                                  onChange={(e) => setSingleDob(e.target.value)}
-                                />
-                              </div>
-
-                              <div>
-                                <label className="block font-bold text-slate-700 mb-1">National ID / Passport Number</label>
-                                <input
-                                  type="text"
-                                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#b82e2e]"
-                                  placeholder="0604125192083"
-                                  value={singleIdNumber}
-                                  onChange={(e) => setSingleIdNumber(e.target.value)}
-                                />
-                              </div>
-                            </div>
-
+                        <form onSubmit={handleEnrollStudent} className="space-y-3.5 text-xs">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
-                              <label className="block font-bold text-slate-700 mb-1">Residential Physical Address</label>
+                              <label className="block font-bold text-slate-700 mb-1">First Name *</label>
                               <input
                                 type="text"
                                 className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#b82e2e]"
-                                placeholder="Street, Suburb, City, Postal Code"
-                                value={singleAddress}
-                                onChange={(e) => setSingleAddress(e.target.value)}
+                                placeholder="e.g. Nontobeko"
+                                value={enrollFirstName}
+                                onChange={(e) => setEnrollFirstName(e.target.value)}
+                                required
+                              />
+                            </div>
+                            <div>
+                              <label className="block font-bold text-slate-700 mb-1">Surname *</label>
+                              <input
+                                type="text"
+                                className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#b82e2e]"
+                                placeholder="e.g. Mbawu"
+                                value={enrollSurname}
+                                onChange={(e) => setEnrollSurname(e.target.value)}
+                                required
                               />
                             </div>
                           </div>
 
-                          {/* Section B: Parent / Guardian Details */}
-                          <div className="space-y-3 pt-2 border-t border-slate-100">
-                            <h4 className="text-xs font-black uppercase text-slate-500 tracking-wider">
-                              B. Parent / Guardian Emergency Details
-                            </h4>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              <div>
-                                <label className="block font-bold text-slate-700 mb-1">Guardian Full Name</label>
-                                <input
-                                  type="text"
-                                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#b82e2e]"
-                                  placeholder="e.g. Mrs. Thandi Ndlovu"
-                                  value={singleGuardianName}
-                                  onChange={(e) => setSingleGuardianName(e.target.value)}
-                                />
-                              </div>
-                              <div>
-                                <label className="block font-bold text-slate-700 mb-1">Relationship</label>
-                                <select
-                                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#b82e2e]"
-                                  value={singleGuardianRelationship}
-                                  onChange={(e) => setSingleGuardianRelationship(e.target.value)}
-                                >
-                                  <option value="Mother">Mother</option>
-                                  <option value="Father">Father</option>
-                                  <option value="Legal Guardian">Legal Guardian</option>
-                                  <option value="Sponsor">Sponsor</option>
-                                </select>
-                              </div>
-                              <div>
-                                <label className="block font-bold text-slate-700 mb-1">Guardian Phone Number</label>
-                                <input
-                                  type="tel"
-                                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#b82e2e]"
-                                  placeholder="+27 83 000 0000"
-                                  value={singleGuardianPhone}
-                                  onChange={(e) => setSingleGuardianPhone(e.target.value)}
-                                />
-                              </div>
-                              <div>
-                                <label className="block font-bold text-slate-700 mb-1">Guardian Email</label>
-                                <input
-                                  type="email"
-                                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#b82e2e]"
-                                  placeholder="guardian@example.com"
-                                  value={singleGuardianEmail}
-                                  onChange={(e) => setSingleGuardianEmail(e.target.value)}
-                                />
-                              </div>
+                          <div>
+                            <label className="block font-bold text-slate-700 mb-1">Student Email Address *</label>
+                            <input
+                              type="email"
+                              className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#b82e2e]"
+                              placeholder="student@gmail.com"
+                              value={enrollEmail}
+                              onChange={(e) => setEnrollEmail(e.target.value)}
+                              required
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block font-bold text-slate-700 mb-1">Phone / WhatsApp Number</label>
+                              <input
+                                type="tel"
+                                className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#b82e2e]"
+                                placeholder="+27 82 123 4567"
+                                value={enrollPhone}
+                                onChange={(e) => setEnrollPhone(e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <label className="block font-bold text-slate-700 mb-1">Student Number (or Auto-Generate)</label>
+                              <input
+                                type="text"
+                                className="w-full border border-slate-300 rounded-xl p-2.5 text-xs font-mono text-[#b82e2e] font-bold focus:outline-none focus:border-[#b82e2e]"
+                                placeholder="e.g. STU-829104"
+                                value={enrollStudentNumber}
+                                onChange={(e) => setEnrollStudentNumber(e.target.value)}
+                              />
                             </div>
                           </div>
 
-                          {/* Section C: Initial Module Allocation */}
-                          <div className="space-y-3 pt-2 border-t border-slate-100">
-                            <h4 className="text-xs font-black uppercase text-slate-500 tracking-wider">
-                              C. Initial Module / Course Enrolment
-                            </h4>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                              {AVAILABLE_MODULES.map((m) => {
-                                const isChecked = singleSelectedModules.includes(m.code);
-                                return (
-                                  <label
-                                    key={m.code}
-                                    className={`p-2.5 rounded-xl border flex items-center gap-2 cursor-pointer transition-colors ${
-                                      isChecked ? "bg-red-50/60 border-[#b82e2e]" : "border-slate-200 hover:bg-slate-50"
-                                    }`}
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      checked={isChecked}
-                                      onChange={() => {
-                                        setSingleSelectedModules((prev) =>
-                                          prev.includes(m.code) ? prev.filter((c) => c !== m.code) : [...prev, m.code]
-                                        );
-                                      }}
-                                    />
-                                    <div>
-                                      <p className="font-mono font-bold text-[#b82e2e] text-[11px]">{m.code}</p>
-                                      <p className="text-[10px] text-slate-600 truncate">{m.name}</p>
-                                    </div>
-                                  </label>
-                                );
-                              })}
-                            </div>
-                          </div>
-
-                          <div className="pt-4 flex justify-end">
+                          <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setShowEnrollModal(false)}
+                              className="px-4 py-2 border border-slate-200 text-slate-600 font-semibold rounded-xl hover:bg-slate-50 cursor-pointer"
+                            >
+                              Cancel
+                            </button>
                             <button
                               type="submit"
-                              className="px-6 py-2.5 bg-[#b82e2e] text-white font-bold rounded-xl cursor-pointer hover:bg-red-700 shadow-sm text-xs transition-colors"
+                              className="px-5 py-2 bg-[#b82e2e] hover:bg-red-700 text-white font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
                             >
-                              Register & Enrol Student &rarr;
+                              Complete Enrolment
                             </button>
                           </div>
                         </form>
-                      )}
+                      </div>
+                    </div>
+                  )}
 
-                      {newEnrolTab === "bulk" && (
-                        <div className="space-y-4">
-                          <p className="text-xs text-slate-600">
-                            Paste student names and email addresses, or upload a formatted Excel / CSV file.
-                          </p>
-                          <textarea
-                            rows={6}
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-mono focus:outline-none focus:border-[#b82e2e]"
-                            placeholder="John Doe, john@example.com&#10;Sarah Smith, sarah@example.com"
-                            value={spreadsheetText}
-                            onChange={(e) => handleSpreadsheetTextChange(e.target.value)}
-                          />
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+                  {/* Student Details Inspection Modal */}
+                  {selectedDetailStudent && (() => {
+                    const { first, surname } = getSplitName(selectedDetailStudent);
+                    const isPending = selectedDetailStudent.status === "pending";
+                    return (
+                      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+                        <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-5">
+                          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-[#b82e2e] text-white font-bold flex items-center justify-center text-sm shadow-xs">
+                                {getInitials(selectedDetailStudent.student_name)}
+                              </div>
+                              <div>
+                                <h3 className="text-base font-bold text-slate-900">{selectedDetailStudent.student_name}</h3>
+                                <p className="font-mono text-[#b82e2e] font-bold text-xs">{selectedDetailStudent.invite_code}</p>
+                              </div>
+                            </div>
                             <button
-                              onClick={downloadSampleCsvTemplate}
-                              className="text-xs text-[#b82e2e] hover:underline font-bold cursor-pointer"
+                              onClick={() => setSelectedDetailStudent(null)}
+                              className="text-slate-400 hover:text-slate-700 text-lg font-bold cursor-pointer"
                             >
-                              ðŸ“¥ Download Sample Template (.CSV)
-                            </button>
-                            <button
-                              onClick={handleExecuteBulkImport}
-                              disabled={parsedRows.length === 0 || importingBulk}
-                              className="px-5 py-2.5 bg-slate-900 hover:bg-black disabled:opacity-40 text-white text-xs font-bold rounded-xl cursor-pointer shadow-xs transition-colors"
-                            >
-                              Register {parsedRows.length} Students
+                              &times;
                             </button>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
 
-                  {/* ========================================================================= */}
-                  {/* VIEW 3: PENDING ENROLMENTS                                                */}
-                  {/* ========================================================================= */}
-                  {activeSubPage === "pending_enrolments" && (
-                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
-                      <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                        <div>
-                          <h3 className="text-sm font-bold text-slate-900">Pending Enrolments ({pendingCount})</h3>
-                          <p className="text-xs text-slate-500">Learners awaiting admission document signoff or fee clearing</p>
-                        </div>
-                        <button
-                          onClick={() => navigateTo("students", "new_enrolment")}
-                          className="px-3 py-1.5 bg-[#b82e2e] text-white text-xs font-bold rounded-xl"
-                        >
-                          + New Enrolment
-                        </button>
-                      </div>
-
-                      <div className="divide-y divide-slate-100">
-                        {invites
-                          .filter((i) => i.status === "pending")
-                          .map((inv) => (
-                            <div key={inv.id} className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                              <div>
-                                <p className="font-bold text-slate-900 text-sm">{inv.student_name}</p>
-                                <p className="font-mono text-[#b82e2e] font-bold text-xs">{inv.invite_code} &bull; {inv.student_email}</p>
-                                <p className="text-xs text-amber-700 mt-1">
-                                  âš ï¸ Parent Indemnity: {inv.parent_consent || "Pending"} | Conduct Pledge: {inv.conduct_consent || "Pending"}
-                                </p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() => handleUpdateStudentStatus(inv.id, "active")}
-                                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl cursor-pointer shadow-xs"
-                                >
-                                  âœ“ Approve & Activate
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setSelectedProfileStudentId(inv.id);
-                                    navigateTo("students", "student_profiles");
-                                  }}
-                                  className="px-3 py-1.5 border border-slate-200 hover:border-slate-300 text-slate-700 font-bold text-xs rounded-xl cursor-pointer"
-                                >
-                                  View Profile
-                                </button>
-                              </div>
+                          <div className="space-y-2.5 text-xs bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+                            <div className="flex justify-between pb-1.5 border-b border-slate-200/60">
+                              <span className="text-slate-500 font-medium">First Name:</span>
+                              <span className="font-bold text-slate-900">{first}</span>
                             </div>
-                          ))}
-                        {pendingCount === 0 && (
-                          <div className="py-8 text-center text-xs text-slate-400">
-                            No pending enrolments. All student applications are cleared and active.
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ========================================================================= */}
-                  {/* VIEW 4: ACTIVE ENROLMENTS                                                 */}
-                  {/* ========================================================================= */}
-                  {activeSubPage === "active_enrolments" && (
-                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
-                      <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                        <div>
-                          <h3 className="text-sm font-bold text-slate-900">Active Student Enrolments ({activeCount})</h3>
-                          <p className="text-xs text-slate-500">Currently enrolled learners in good academic standing</p>
-                        </div>
-                      </div>
-                      <div className="divide-y divide-slate-100">
-                        {invites
-                          .filter((i) => i.status === "active")
-                          .map((inv) => (
-                            <div key={inv.id} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                              <div>
-                                <p className="font-bold text-slate-900 text-sm">{inv.student_name}</p>
-                                <p className="font-mono text-[#b82e2e] font-bold text-xs">{inv.invite_code} &bull; {inv.student_email}</p>
-                                <div className="flex gap-1 mt-1">
-                                  {(inv.enrolled_modules || ["MTH101", "PHY101"]).map((m) => (
-                                    <span key={m} className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-mono text-[10px] font-bold">
-                                      {m}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() => {
-                                    setSelectedProfileStudentId(inv.id);
-                                    navigateTo("students", "student_profiles");
-                                  }}
-                                  className="px-3 py-1.5 bg-[#b82e2e] text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer"
-                                >
-                                  View Full Profile &rarr;
-                                </button>
-                              </div>
+                            <div className="flex justify-between pb-1.5 border-b border-slate-200/60">
+                              <span className="text-slate-500 font-medium">Surname:</span>
+                              <span className="font-bold text-slate-900">{surname || "-"}</span>
                             </div>
-                          ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ========================================================================= */}
-                  {/* VIEW 5: COMPLETED / INACTIVE ENROLMENTS                                   */}
-                  {/* ========================================================================= */}
-                  {activeSubPage === "inactive_enrolments" && (
-                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
-                      <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                        <div>
-                          <h3 className="text-sm font-bold text-slate-900">Completed & Inactive Enrolments ({inactiveCount})</h3>
-                          <p className="text-xs text-slate-500">Alumni, completed scholars, or withdrawn student records</p>
-                        </div>
-                      </div>
-                      <div className="divide-y divide-slate-100">
-                        {invites
-                          .filter((i) => i.status === "completed" || i.status === "inactive")
-                          .map((inv) => (
-                            <div key={inv.id} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                              <div>
-                                <p className="font-bold text-slate-900 text-sm">{inv.student_name}</p>
-                                <p className="font-mono text-slate-500 font-bold text-xs">{inv.invite_code} &bull; {inv.student_email}</p>
-                                <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-600">
-                                  {inv.status.toUpperCase()}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() => handleUpdateStudentStatus(inv.id, "active")}
-                                  className="px-3 py-1.5 bg-slate-900 hover:bg-black text-white font-bold text-xs rounded-xl cursor-pointer shadow-xs"
-                                >
-                                  Reactivate Enrolment
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setSelectedProfileStudentId(inv.id);
-                                    navigateTo("students", "student_profiles");
-                                  }}
-                                  className="px-3 py-1.5 border border-slate-200 hover:border-slate-300 text-slate-700 font-bold text-xs rounded-xl cursor-pointer"
-                                >
-                                  View Profile
-                                </button>
-                              </div>
+                            <div className="flex justify-between pb-1.5 border-b border-slate-200/60">
+                              <span className="text-slate-500 font-medium">Student Number:</span>
+                              <span className="font-mono font-bold text-[#b82e2e]">{selectedDetailStudent.invite_code}</span>
                             </div>
-                          ))}
-                        {inactiveCount === 0 && (
-                          <div className="py-8 text-center text-xs text-slate-400">
-                            No inactive or completed enrolments recorded.
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ========================================================================= */}
-                  {/* VIEW 6: ASSIGN STUDENT TO MODULE/COURSE                                   */}
-                  {/* ========================================================================= */}
-                  {activeSubPage === "assign_modules" && (
-                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-6 max-w-3xl">
-                      <div>
-                        <h3 className="text-sm font-bold text-slate-900">Assign Student to Modules / Courses</h3>
-                        <p className="text-xs text-slate-500">Allocate curriculum modules and manage subject enrolments</p>
-                      </div>
-
-                      {/* Select Student */}
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                          Select Scholar / Student
-                        </label>
-                        <select
-                          value={moduleAssignStudentId}
-                          onChange={(e) => {
-                            const newId = e.target.value;
-                            setModuleAssignStudentId(newId);
-                            const found = invites.find((i) => i.id === newId);
-                            if (found) {
-                              setModuleAssignSelected(found.enrolled_modules || ["MTH101", "PHY101"]);
-                            }
-                          }}
-                          className="w-full border border-slate-300 rounded-xl p-2.5 text-xs text-slate-900 font-semibold focus:outline-none focus:border-[#b82e2e]"
-                        >
-                          {invites.map((s) => (
-                            <option key={s.id} value={s.id}>
-                              {s.student_name} ({s.invite_code}) - {s.status.toUpperCase()}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* Checkbox of Modules */}
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <label className="text-xs font-bold text-slate-700">
-                            Select Academic Modules for {moduleAssignTarget.student_name}:
-                          </label>
-                          <span className="text-[11px] font-bold text-[#b82e2e]">
-                            {moduleAssignSelected.length} Modules Selected
-                          </span>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          {AVAILABLE_MODULES.map((mod) => {
-                            const isSelected = moduleAssignSelected.includes(mod.code);
-                            return (
-                              <div
-                                key={mod.code}
-                                onClick={() => handleToggleModuleAssign(mod.code)}
-                                className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-start gap-3 ${
-                                  isSelected ? "bg-red-50/70 border-[#b82e2e] shadow-2xs" : "border-slate-200 hover:bg-slate-50"
+                            <div className="flex justify-between pb-1.5 border-b border-slate-200/60">
+                              <span className="text-slate-500 font-medium">Email Address:</span>
+                              <span className="font-bold text-slate-900">{selectedDetailStudent.student_email}</span>
+                            </div>
+                            <div className="flex justify-between pb-1.5 border-b border-slate-200/60">
+                              <span className="text-slate-500 font-medium">Phone / WhatsApp:</span>
+                              <span className="font-semibold text-slate-800">{selectedDetailStudent.phone || "Not Provided"}</span>
+                            </div>
+                            <div className="flex justify-between pb-1.5 border-b border-slate-200/60">
+                              <span className="text-slate-500 font-medium">Enrolment Date:</span>
+                              <span className="font-semibold text-slate-800">
+                                {new Date(selectedDetailStudent.created_at || Date.now()).toLocaleDateString("en-ZA", {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric",
+                                })}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center pt-0.5">
+                              <span className="text-slate-500 font-medium">Enrolment Status:</span>
+                              <button
+                                onClick={() => {
+                                  const nextStatus = isPending ? "active" : "pending";
+                                  setInvites((prev) =>
+                                    prev.map((s) => (s.id === selectedDetailStudent.id ? { ...s, status: nextStatus } : s))
+                                  );
+                                  setSelectedDetailStudent({ ...selectedDetailStudent, status: nextStatus });
+                                  setStatusMessage({ type: "success", text: `Status updated to ${nextStatus.toUpperCase()}` });
+                                }}
+                                className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] cursor-pointer transition-colors ${
+                                  isPending
+                                    ? "bg-amber-100 text-amber-800 hover:bg-emerald-100 hover:text-emerald-800"
+                                    : "bg-emerald-100 text-emerald-800 hover:bg-amber-100 hover:text-amber-800"
                                 }`}
+                                title="Click to toggle status"
                               >
-                                <input
-                                  type="checkbox"
-                                  checked={isSelected}
-                                  onChange={() => {}}
-                                  className="mt-1"
-                                />
-                                <div className="space-y-0.5">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-mono font-bold text-[#b82e2e] text-xs">{mod.code}</span>
-                                    <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-semibold">
-                                      {mod.credits}
-                                    </span>
-                                  </div>
-                                  <p className="font-bold text-slate-900 text-xs">{mod.name}</p>
-                                  <p className="text-[10px] text-slate-500">{mod.faculty}</p>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                        <p className="text-xs text-slate-500">
-                          Changes take effect immediately across student documents, Moodle bridges & rosters.
-                        </p>
-                        <button
-                          onClick={handleSaveModuleAssignment}
-                          className="px-6 py-2.5 bg-[#b82e2e] text-white font-bold rounded-xl cursor-pointer hover:bg-red-700 text-xs shadow-xs transition-colors"
-                        >
-                          Save Module Allocation &rarr;
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ========================================================================= */}
-                  {/* VIEW 7: 3. STUDENT PROFILES (The Complete 8-Section Inspector)           */}
-                  {/* ========================================================================= */}
-                  {activeSubPage === "student_profiles" && (
-                    <div className="flex flex-col lg:flex-row gap-6 items-start">
-                      {/* Left: Student Selector & Directory List */}
-                      <div className="w-full lg:w-72 bg-white border border-slate-200 rounded-2xl p-4 shadow-xs space-y-3 shrink-0">
-                        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                          <h4 className="text-xs font-black uppercase tracking-wider text-slate-500">
-                            Select Scholar
-                          </h4>
-                          <span className="text-xs text-slate-400 font-bold">{invites.length} Records</span>
-                        </div>
-
-                        <input
-                          type="text"
-                          placeholder="Search scholars..."
-                          value={profileSearchQuery}
-                          onChange={(e) => setProfileSearchQuery(e.target.value)}
-                          className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-[#b82e2e]"
-                        />
-
-                        <div className="space-y-1 max-h-[600px] overflow-y-auto pr-1 divide-y divide-slate-50">
-                          {invites
-                            .filter(
-                              (s) =>
-                                !profileSearchQuery.trim() ||
-                                s.student_name.toLowerCase().includes(profileSearchQuery.toLowerCase()) ||
-                                s.invite_code.toLowerCase().includes(profileSearchQuery.toLowerCase())
-                            )
-                            .map((s) => {
-                              const isSelected = s.id === selectedProfileStudent.id;
-                              return (
-                                <div
-                                  key={s.id}
-                                  onClick={() => setSelectedProfileStudentId(s.id)}
-                                  className={`p-2.5 rounded-xl cursor-pointer transition-all flex items-center gap-3 ${
-                                    isSelected
-                                      ? "bg-[#1e293b] text-white shadow-xs"
-                                      : "hover:bg-slate-50 text-slate-900"
-                                  }`}
-                                >
-                                  <div
-                                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-                                      isSelected ? "bg-[#b82e2e] text-white" : "bg-slate-200 text-slate-800"
-                                    }`}
-                                  >
-                                    {getInitials(s.student_name)}
-                                  </div>
-                                  <div className="overflow-hidden">
-                                    <p className="font-bold text-xs truncate">{s.student_name}</p>
-                                    <p className={`font-mono text-[11px] font-bold ${isSelected ? "text-red-300" : "text-[#b82e2e]"}`}>
-                                      {s.invite_code}
-                                    </p>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                        </div>
-                      </div>
-
-                      {/* Right: The Complete 8-Section Individual Student Profile */}
-                      <div className="flex-1 w-full space-y-6">
-                        {/* Profile Header Card */}
-                        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                          <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 rounded-2xl bg-[#b82e2e] text-white font-black text-xl flex items-center justify-center shadow-sm ring-4 ring-red-50 shrink-0">
-                              {getInitials(selectedProfileStudent.student_name)}
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <h3 className="text-xl font-black text-slate-900">
-                                  {selectedProfileStudent.student_name}
-                                </h3>
-                                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                                  selectedProfileStudent.status === "active"
-                                    ? "bg-emerald-100 text-emerald-800"
-                                    : selectedProfileStudent.status === "pending"
-                                    ? "bg-amber-100 text-amber-800"
-                                    : "bg-slate-100 text-slate-700"
-                                }`}>
-                                  {selectedProfileStudent.status}
-                                </span>
-                              </div>
-                              <p className="text-xs text-slate-500 font-mono mt-0.5">
-                                Student ID: <span className="text-[#b82e2e] font-bold font-mono">{selectedProfileStudent.invite_code}</span> &bull; {selectedProfileStudent.faculty || "Faculty of Natural & Applied Sciences"}
-                              </p>
+                                {isPending ? "Pending (Click to Activate)" : "Active (Click to Mark Pending)"}
+                              </button>
                             </div>
                           </div>
 
-                          {/* Quick Profile Actions */}
-                          <div className="flex items-center gap-2 flex-wrap">
+                          {selectedDetailStudent.temp_password && (
+                            <div className="p-3 bg-red-50 border border-red-200 rounded-xl flex items-center justify-between text-xs">
+                              <div>
+                                <p className="text-[10px] font-bold text-red-800 uppercase tracking-wider">Temporary Password</p>
+                                <p className="font-mono font-bold text-slate-900 text-xs mt-0.5">{selectedDetailStudent.temp_password}</p>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(
+                                    `Student No: ${selectedDetailStudent.invite_code}\nEmail: ${selectedDetailStudent.student_email}\nPassword: ${selectedDetailStudent.temp_password}\nPortal: studyhub.logtraq.co.za`
+                                  );
+                                  setStatusMessage({ type: "success", text: "Login credentials copied to clipboard!" });
+                                }}
+                                className="px-2.5 py-1 bg-white border border-red-200 text-[#b82e2e] font-bold text-xs rounded-lg hover:bg-red-100/50 cursor-pointer shadow-2xs"
+                              >
+                                Copy Login Info
+                              </button>
+                            </div>
+                          )}
+
+                          <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                             <button
                               onClick={() => {
-                                setModuleAssignStudentId(selectedProfileStudent.id);
-                                setModuleAssignSelected(selectedProfileStudent.enrolled_modules || ["MTH101", "PHY101"]);
-                                navigateTo("students", "assign_modules");
+                                setDocStudentId(selectedDetailStudent.id);
+                                setSelectedDetailStudent(null);
+                                navigateTo("documents", "indemnity_form");
                               }}
-                              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-bold text-xs cursor-pointer transition-colors"
+                              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer"
                             >
-                              Assign Modules
+                              Open Student Documents
                             </button>
                             <button
-                              onClick={() => {
-                                setDocStudentId(selectedProfileStudent.id);
-                                navigateTo("documents", "enrolment_letter");
-                              }}
-                              className="px-3 py-1.5 bg-[#b82e2e] hover:bg-red-700 text-white rounded-xl font-bold text-xs cursor-pointer transition-colors shadow-xs"
+                              onClick={() => setSelectedDetailStudent(null)}
+                              className="px-4 py-1.5 bg-slate-900 hover:bg-black text-white font-bold text-xs rounded-xl cursor-pointer"
                             >
-                              Generate Proof of Enrolment
+                              Close
                             </button>
-                          </div>
-                        </div>
-
-                        {/* Structured Sections 1 to 4: Personal, Contact, Guardian, Academic */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {/* 1. Personal Details */}
-                          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-3">
-                            <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-                              <span className="text-sm">ðŸ‘¤</span>
-                              <h4 className="text-xs font-black uppercase tracking-wider text-slate-700">
-                                1. Personal Details
-                              </h4>
-                            </div>
-                            <div className="space-y-2 text-xs">
-                              <div className="flex justify-between">
-                                <span className="text-slate-500">Legal Full Name:</span>
-                                <span className="font-bold text-slate-900">{selectedProfileStudent.student_name}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-slate-500">Preferred Name:</span>
-                                <span className="font-semibold text-slate-800">{selectedProfileStudent.preferred_name || selectedProfileStudent.student_name.split(" ")[0]}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-slate-500">Date of Birth:</span>
-                                <span className="font-semibold text-slate-800">{selectedProfileStudent.dob || "2006-05-14"}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-slate-500">Gender:</span>
-                                <span className="font-semibold text-slate-800">{selectedProfileStudent.gender || "Female"}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-slate-500">National ID / Passport:</span>
-                                <span className="font-mono font-bold text-slate-800">{selectedProfileStudent.id_number || "0605145123088"}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-slate-500">Nationality:</span>
-                                <span className="font-semibold text-slate-800">{selectedProfileStudent.nationality || "South African"}</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* 2. Contact Details */}
-                          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-3">
-                            <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-                              <span className="text-sm">ðŸ“ž</span>
-                              <h4 className="text-xs font-black uppercase tracking-wider text-slate-700">
-                                2. Contact Details
-                              </h4>
-                            </div>
-                            <div className="space-y-2 text-xs">
-                              <div className="flex justify-between">
-                                <span className="text-slate-500">Primary Email:</span>
-                                <span className="font-bold text-slate-900">{selectedProfileStudent.student_email}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-slate-500">Mobile Phone:</span>
-                                <span className="font-semibold text-slate-800">{selectedProfileStudent.phone || "+27 82 459 1029"}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-slate-500">WhatsApp Direct:</span>
-                                <span className="font-semibold text-emerald-700">{selectedProfileStudent.whatsapp || "+27 82 459 1029"}</span>
-                              </div>
-                              <div className="flex justify-between items-start pt-1">
-                                <span className="text-slate-500 shrink-0 mr-2">Residential Address:</span>
-                                <span className="font-semibold text-slate-800 text-right">
-                                  {selectedProfileStudent.address || "14 Rosebank Road, Rondebosch, Cape Town, 7700"}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* 3. Parent / Guardian Details */}
-                          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-3">
-                            <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-                              <span className="text-sm">ðŸ‘¨â€ðŸ‘©â€ðŸ‘§</span>
-                              <h4 className="text-xs font-black uppercase tracking-wider text-slate-700">
-                                3. Parent / Guardian Details
-                              </h4>
-                            </div>
-                            <div className="space-y-2 text-xs">
-                              <div className="flex justify-between">
-                                <span className="text-slate-500">Primary Guardian:</span>
-                                <span className="font-bold text-slate-900">{selectedProfileStudent.guardian_name || "Dr. Peter Kgosi"}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-slate-500">Relationship:</span>
-                                <span className="font-semibold text-slate-800">{selectedProfileStudent.guardian_relationship || "Father"}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-slate-500">Guardian Contact No:</span>
-                                <span className="font-semibold text-slate-800">{selectedProfileStudent.guardian_phone || "+27 83 902 4411"}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-slate-500">Guardian Email:</span>
-                                <span className="font-semibold text-slate-800">{selectedProfileStudent.guardian_email || "peter.kgosi@gmail.com"}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-slate-500">Emergency Phone:</span>
-                                <span className="font-mono font-bold text-[#b82e2e]">{selectedProfileStudent.emergency_contact || "+27 83 902 4411"}</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* 4. Student Number & Identity */}
-                          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-3">
-                            <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-                              <span className="text-sm">ðŸŽ“</span>
-                              <h4 className="text-xs font-black uppercase tracking-wider text-slate-700">
-                                4. Student Number & Institutional Info
-                              </h4>
-                            </div>
-                            <div className="space-y-2 text-xs">
-                              <div className="flex justify-between">
-                                <span className="text-slate-500">Institutional Student No:</span>
-                                <span className="font-mono font-black text-[#b82e2e] text-sm">{selectedProfileStudent.invite_code}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-slate-500">Campus ID:</span>
-                                <span className="font-semibold text-slate-800">{selectedProfileStudent.campus_id || "UP-HAT-2026"}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-slate-500">Enrolment Date:</span>
-                                <span className="font-semibold text-slate-800">{selectedProfileStudent.enrolment_date || "15 Jan 2026"}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-slate-500">Academic Year:</span>
-                                <span className="font-semibold text-slate-800">{selectedProfileStudent.academic_year || "2026"}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-slate-500">Faculty:</span>
-                                <span className="font-semibold text-slate-800">{selectedProfileStudent.faculty || "Faculty of Engineering"}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* 5. Enrolled Modules */}
-                        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-3">
-                          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm">ðŸ“š</span>
-                              <h4 className="text-xs font-black uppercase tracking-wider text-slate-700">
-                                5. Enrolled Modules & Curriculum
-                              </h4>
-                            </div>
-                            <button
-                              onClick={() => {
-                                setModuleAssignStudentId(selectedProfileStudent.id);
-                                setModuleAssignSelected(selectedProfileStudent.enrolled_modules || ["MTH101", "PHY101"]);
-                                navigateTo("students", "assign_modules");
-                              }}
-                              className="text-xs font-bold text-[#b82e2e] hover:underline cursor-pointer"
-                            >
-                              + Manage Modules
-                            </button>
-                          </div>
-
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            {(selectedProfileStudent.enrolled_modules && selectedProfileStudent.enrolled_modules.length > 0
-                              ? selectedProfileStudent.enrolled_modules
-                              : ["MTH101", "PHY101", "CSC101"]
-                            ).map((code) => {
-                              const modInfo = AVAILABLE_MODULES.find((m) => m.code === code) || {
-                                code,
-                                name: "Registered Academic Module",
-                                credits: "16 Credits",
-                              };
-                              return (
-                                <div key={code} className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
-                                  <div className="flex items-center justify-between">
-                                    <span className="font-mono font-bold text-[#b82e2e] text-xs">{modInfo.code}</span>
-                                    <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-bold">
-                                      Active
-                                    </span>
-                                  </div>
-                                  <p className="font-bold text-slate-900 text-xs">{modInfo.name}</p>
-                                  <p className="text-[10px] text-slate-400">{modInfo.credits}</p>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        {/* 6. Enrolment Status & Status Switcher */}
-                        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-3">
-                          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm">ðŸ·ï¸</span>
-                              <h4 className="text-xs font-black uppercase tracking-wider text-slate-700">
-                                6. Enrolment Status & Standing
-                              </h4>
-                            </div>
-                            <span className="text-xs text-slate-400">Click below to change standing</span>
-                          </div>
-
-                          <div className="flex flex-wrap items-center gap-2">
-                            <button
-                              onClick={() => handleUpdateStudentStatus(selectedProfileStudent.id, "active")}
-                              className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
-                                selectedProfileStudent.status === "active"
-                                  ? "bg-emerald-600 text-white shadow-xs"
-                                  : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200"
-                              }`}
-                            >
-                              âœ“ Set Active Enrolment
-                            </button>
-                            <button
-                              onClick={() => handleUpdateStudentStatus(selectedProfileStudent.id, "pending")}
-                              className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
-                                selectedProfileStudent.status === "pending"
-                                  ? "bg-amber-600 text-white shadow-xs"
-                                  : "bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200"
-                              }`}
-                            >
-                              â³ Set Pending Review
-                            </button>
-                            <button
-                              onClick={() => handleUpdateStudentStatus(selectedProfileStudent.id, "completed")}
-                              className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
-                                selectedProfileStudent.status === "completed"
-                                  ? "bg-slate-700 text-white shadow-xs"
-                                  : "bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200"
-                              }`}
-                            >
-                              ðŸŽ“ Set Completed / Alumni
-                            </button>
-                            <button
-                              onClick={() => handleUpdateStudentStatus(selectedProfileStudent.id, "inactive")}
-                              className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
-                                selectedProfileStudent.status === "inactive"
-                                  ? "bg-red-700 text-white shadow-xs"
-                                  : "bg-red-50 text-red-700 hover:bg-red-100 border border-red-200"
-                              }`}
-                            >
-                              âœ• Set Inactive / Withdrawn
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* 7. Documents */}
-                        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-3">
-                          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm">ðŸ“„</span>
-                              <h4 className="text-xs font-black uppercase tracking-wider text-slate-700">
-                                7. Official Documents
-                              </h4>
-                            </div>
-                            <span className="text-xs text-slate-400">Interactive document generation & verification</span>
-                          </div>
-
-                          <div className="divide-y divide-slate-100 text-xs">
-                            {[
-                              { name: "Parent Indemnity Agreement (2026)", type: "indemnity_form", status: "Verified", date: "16 Jan 2026" },
-                              { name: "Student Code of Conduct Pledge", type: "conduct_pledge", status: "Verified", date: "16 Jan 2026" },
-                              { name: "Proof of Enrolment & Registration", type: "enrolment_letter", status: "Generated", date: "17 Jan 2026" },
-                              { name: "Academic Progress Report", type: "progress_report", status: "Generated", date: "20 Jan 2026" },
-                            ].map((doc, idx) => (
-                              <div key={idx} className="py-2.5 flex items-center justify-between">
-                                <div>
-                                  <p className="font-bold text-slate-900">{doc.name}</p>
-                                  <p className="text-[11px] text-slate-400">Date recorded: {doc.date}</p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                    {doc.status}
-                                  </span>
-                                  <button
-                                    onClick={() => handleOpenStudentDocument(selectedProfileStudent.id, doc.type)}
-                                    className="px-2.5 py-1 bg-white border border-slate-200 hover:border-[#b82e2e] hover:text-[#b82e2e] rounded-lg font-bold text-xs cursor-pointer transition-colors"
-                                  >
-                                    View / Print &rarr;
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* 8. Consent Status */}
-                        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-3">
-                          <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-                            <span className="text-sm">ðŸ›¡ï¸</span>
-                            <h4 className="text-xs font-black uppercase tracking-wider text-slate-700">
-                              8. Legal Consent Status & Compliance
-                            </h4>
-                          </div>
-
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                            <div className="p-3 rounded-xl border border-emerald-200 bg-emerald-50/50 flex items-center justify-between">
-                              <div>
-                                <p className="font-bold text-slate-900">Parental Indemnity Consent</p>
-                                <p className="text-[11px] text-emerald-700">Legally signed by guardian</p>
-                              </div>
-                              <span className="px-2 py-0.5 rounded font-black text-[10px] bg-emerald-200 text-emerald-900">
-                                {selectedProfileStudent.parent_consent || "Signed"}
-                              </span>
-                            </div>
-
-                            <div className="p-3 rounded-xl border border-emerald-200 bg-emerald-50/50 flex items-center justify-between">
-                              <div>
-                                <p className="font-bold text-slate-900">Student Code of Conduct</p>
-                                <p className="text-[11px] text-emerald-700">Digital signature logged</p>
-                              </div>
-                              <span className="px-2 py-0.5 rounded font-black text-[10px] bg-emerald-200 text-emerald-900">
-                                {selectedProfileStudent.conduct_consent || "Signed"}
-                              </span>
-                            </div>
-
-                            <div className="p-3 rounded-xl border border-emerald-200 bg-emerald-50/50 flex items-center justify-between">
-                              <div>
-                                <p className="font-bold text-slate-900">POPIA Act Data Privacy Consent</p>
-                                <p className="text-[11px] text-emerald-700">Protection of Personal Info consented</p>
-                              </div>
-                              <span className="px-2 py-0.5 rounded font-black text-[10px] bg-emerald-200 text-emerald-900">
-                                {selectedProfileStudent.popia_consent || "Signed"}
-                              </span>
-                            </div>
-
-                            <div className="p-3 rounded-xl border border-emerald-200 bg-emerald-50/50 flex items-center justify-between">
-                              <div>
-                                <p className="font-bold text-slate-900">Media & Photography Permission</p>
-                                <p className="text-[11px] text-emerald-700">Authorized for institution circulars</p>
-                              </div>
-                              <span className="px-2 py-0.5 rounded font-black text-[10px] bg-emerald-200 text-emerald-900">
-                                Granted
-                              </span>
-                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                 </div>
               );
-            })()}
-
-            {/* --- TEACHER: FINANCE --- */}
+            })()}{/* --- TEACHER: FINANCE --- */}
             {isTeacher && activeDepartment === "finance" && (
               <div className="space-y-6">
                 {activeSubPage === "ledger_overview" && (
@@ -3809,7 +2552,7 @@ export default function Dashboard() {
                         type="text"
                         value={profileCampusId}
                         onChange={(e) => setProfileCampusId(e.target.value)}
-                        placeholder="u23489102"
+                        placeholder="STU-001"
                         className="w-full border border-slate-300 rounded-xl p-3 text-xs text-slate-900 focus:outline-none focus:border-[#b82e2e]"
                       />
                     </div>
@@ -3842,7 +2585,7 @@ export default function Dashboard() {
                       <label className="font-bold text-slate-700">System Permission</label>
                       <input
                         type="text"
-                        value={isTeacher ? "Lead Educator â€¢ Administrator" : "Registered Scholar"}
+                        value={isTeacher ? "Lead Educator / Administrator" : "Registered Scholar"}
                         disabled
                         className="w-full border border-slate-200 bg-slate-50 text-slate-500 rounded-xl p-3 text-xs cursor-not-allowed"
                       />
