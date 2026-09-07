@@ -40,6 +40,20 @@ export default function Home() {
   // Active login role attempt ref to prevent race condition with auth listeners
   const activeLoginRoleRef = useRef<"teacher" | "student" | null>(null);
 
+  // Listen to pageshow event to handle Chrome Back button and bfcache restoration
+  useEffect(() => {
+    const handlePageShow = () => {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          window.location.replace("/dashboard");
+        }
+      });
+    };
+
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
+  }, []);
+
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {

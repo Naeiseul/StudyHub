@@ -281,6 +281,101 @@ function ExternalLinkIcon({ className = "w-4 h-4" }: { className?: string }) {
   );
 }
 
+// --- Department Navigation Definitions (Static Module-Level) ---
+const TEACHER_TILES = [
+  { id: "students", title: "Students", icon: StudentsIllustrativeIcon, subtitle: "Roster, enrolments & import" },
+  { id: "finance", title: "Finance", icon: FinanceIllustrativeIcon, subtitle: "Fee ledger, billing & Paystack" },
+  { id: "documents", title: "Documents", icon: DocumentsIllustrativeIcon, subtitle: "Indemnity forms, conduct & letters" },
+  { id: "timetable", title: "Timetable", icon: TimetableIllustrativeIcon, subtitle: "Schedules, sessions & venues" },
+  { id: "academic-overview", title: "Academic Overview", icon: ModulesIllustrativeIcon, subtitle: "Curriculum, marks & Moodle" },
+  { id: "announcements", title: "Announcements", icon: AnnouncementsIllustrativeIcon, subtitle: "Broadcast circulars & notices" },
+  { id: "settings", title: "Settings", icon: SettingsIllustrativeIcon, subtitle: "Capacity, academy profile & security" },
+];
+
+const STUDENT_TILES = [
+  { id: "finance", title: "Finances", icon: FinanceIllustrativeIcon, subtitle: "Student Account, payments & fee ledger" },
+  { id: "modules", title: "My Modules", icon: ModulesIllustrativeIcon, subtitle: "Course syllabus & Moodle classroom" },
+  { id: "student-life", title: "Student Life", icon: StudentLifeIllustrativeIcon, subtitle: "Digital student ID & conduct pledge" },
+  { id: "timetable", title: "Timetable", icon: TimetableIllustrativeIcon, subtitle: "Lecture schedules & exam venues" },
+  { id: "announcements", title: "Announcements", icon: AnnouncementsIllustrativeIcon, subtitle: "Circulars & administrative dates" },
+  { id: "settings", title: "Settings", icon: SettingsIllustrativeIcon, subtitle: "Profile & account preferences" },
+];
+
+// Sub-Navigation Menus INSIDE Each Tile
+const TEACHER_MENUS: Record<string, { id: string; label: string }[]> = {
+  students: [
+    { id: "roster", label: "Student Directory & Roster" },
+    { id: "bulk_import", label: "Bulk Spreadsheet Import" },
+    { id: "single_enroll", label: "Single Student Registration" },
+  ],
+  finance: [
+    { id: "ledger_overview", label: "Fee Ledger & Accounts" },
+    { id: "issue_invoice", label: "Issue Student Invoice" },
+    { id: "all_invoices", label: "All Issued Invoices" },
+    { id: "paystack_settings", label: "Paystack & Settlement" },
+  ],
+  documents: [
+    { id: "indemnity_form", label: "Parent Indemnity Form" },
+    { id: "conduct_pledge", label: "Student Code of Conduct" },
+    { id: "enrolment_letter", label: "Proof of Enrolment Letter" },
+    { id: "progress_report", label: "Academic Progress Report" },
+    { id: "student_account", label: "Invoice: Student Account" },
+  ],
+  timetable: [
+    { id: "teaching_schedule", label: "Teaching Schedule" },
+    { id: "schedule_session", label: "Schedule Virtual Session" },
+    { id: "venues", label: "Lecture Venues & Rooms" },
+  ],
+  "academic-overview": [
+    { id: "curriculum", label: "Curriculum Modules" },
+    { id: "moodle_bridge", label: "Manage in Moodle" },
+    { id: "marks", label: "Assessment Marks & Stats" },
+  ],
+  announcements: [
+    { id: "broadcast", label: "Broadcast New Notice" },
+    { id: "archive", label: "Notice History & Archive" },
+  ],
+  settings: [
+    { id: "institution_profile", label: "Profile Details" },
+    { id: "capacity", label: "Enrolment Capacity" },
+    { id: "security", label: "Password & Security" },
+  ],
+};
+
+const STUDENT_MENUS: Record<string, { id: string; label: string }[]> = {
+  finance: [
+    { id: "student_account", label: "Student Account (Invoice)" },
+    { id: "make_payment", label: "Make Payment (Paystack / EFT)" },
+    { id: "payment_history", label: "Payment History & Receipts" },
+    { id: "fee_structure", label: "Fee Structure & Quotation" },
+  ],
+  modules: [
+    { id: "registered_modules", label: "Registered Modules" },
+    { id: "moodle_classroom", label: "Open Classroom in Moodle" },
+    { id: "study_materials", label: "Study Materials & Past Papers" },
+    { id: "progress_report", label: "Academic Progress Report" },
+  ],
+  "student-life": [
+    { id: "digital_card", label: "Digital Student ID Card" },
+    { id: "code_of_conduct", label: "Student Code of Conduct" },
+    { id: "campus_services", label: "Campus Services & Support" },
+  ],
+  timetable: [
+    { id: "weekly_schedule", label: "Weekly Lecture Schedule" },
+    { id: "virtual_sessions", label: "Virtual Classroom Links" },
+    { id: "exam_dates", label: "Exam Timetable & Venues" },
+  ],
+  announcements: [
+    { id: "all_notices", label: "All Institutional Notices" },
+    { id: "academic_circulars", label: "Academic Circulars" },
+    { id: "financial_notices", label: "Financial Notices" },
+  ],
+  settings: [
+    { id: "account_profile", label: "Profile Details" },
+    { id: "security", label: "Password & Security" },
+  ],
+};
+
 export default function Dashboard() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -581,109 +676,13 @@ export default function Dashboard() {
   }, [router]);
 
   const isTeacher = profile?.role === "teacher";
-
-  // --- Department Navigation Definitions (UCT Inspired) ---
-  const TEACHER_TILES = [
-    { id: "students", title: "Students", icon: StudentsIllustrativeIcon, subtitle: "Roster, enrolments & import" },
-    { id: "finance", title: "Finance", icon: FinanceIllustrativeIcon, subtitle: "Fee ledger, billing & Paystack" },
-    { id: "documents", title: "Documents", icon: DocumentsIllustrativeIcon, subtitle: "Indemnity forms, conduct & letters" },
-    { id: "timetable", title: "Timetable", icon: TimetableIllustrativeIcon, subtitle: "Schedules, sessions & venues" },
-    { id: "academic-overview", title: "Academic Overview", icon: ModulesIllustrativeIcon, subtitle: "Curriculum, marks & Moodle" },
-    { id: "announcements", title: "Announcements", icon: AnnouncementsIllustrativeIcon, subtitle: "Broadcast circulars & notices" },
-    { id: "settings", title: "Settings", icon: SettingsIllustrativeIcon, subtitle: "Capacity, academy profile & security" },
-  ];
-
-  const STUDENT_TILES = [
-    { id: "finance", title: "Finances", icon: FinanceIllustrativeIcon, subtitle: "Student Account, payments & fee ledger" },
-    { id: "modules", title: "My Modules", icon: ModulesIllustrativeIcon, subtitle: "Course syllabus & Moodle classroom" },
-    { id: "student-life", title: "Student Life", icon: StudentLifeIllustrativeIcon, subtitle: "Digital student ID & conduct pledge" },
-    { id: "timetable", title: "Timetable", icon: TimetableIllustrativeIcon, subtitle: "Lecture schedules & exam venues" },
-    { id: "announcements", title: "Announcements", icon: AnnouncementsIllustrativeIcon, subtitle: "Circulars & administrative dates" },
-    { id: "settings", title: "Settings", icon: SettingsIllustrativeIcon, subtitle: "Profile & account preferences" },
-  ];
-
-  // Sub-Navigation Menus INSIDE Each Tile (NOT the other dashboard tiles!)
-  const TEACHER_MENUS: Record<string, { id: string; label: string }[]> = {
-    students: [
-      { id: "roster", label: "Student Directory & Roster" },
-      { id: "bulk_import", label: "Bulk Spreadsheet Import" },
-      { id: "single_enroll", label: "Single Student Registration" },
-    ],
-    finance: [
-      { id: "ledger_overview", label: "Fee Ledger & Accounts" },
-      { id: "issue_invoice", label: "Issue Student Invoice" },
-      { id: "all_invoices", label: "All Issued Invoices" },
-      { id: "paystack_settings", label: "Paystack & Settlement" },
-    ],
-    documents: [
-      { id: "indemnity_form", label: "Parent Indemnity Form" },
-      { id: "conduct_pledge", label: "Student Code of Conduct" },
-      { id: "enrolment_letter", label: "Proof of Enrolment Letter" },
-      { id: "progress_report", label: "Academic Progress Report" },
-      { id: "student_account", label: "Invoice: Student Account" },
-    ],
-    timetable: [
-      { id: "teaching_schedule", label: "Teaching Schedule" },
-      { id: "schedule_session", label: "Schedule Virtual Session" },
-      { id: "venues", label: "Lecture Venues & Rooms" },
-    ],
-    "academic-overview": [
-      { id: "curriculum", label: "Curriculum Modules" },
-      { id: "moodle_bridge", label: "Manage in Moodle" },
-      { id: "marks", label: "Assessment Marks & Stats" },
-    ],
-    announcements: [
-      { id: "broadcast", label: "Broadcast New Notice" },
-      { id: "archive", label: "Notice History & Archive" },
-    ],
-    settings: [
-      { id: "institution_profile", label: "Profile Details" },
-      { id: "capacity", label: "Enrolment Capacity" },
-      { id: "security", label: "Password & Security" },
-    ],
-  };
-
-  const STUDENT_MENUS: Record<string, { id: string; label: string }[]> = {
-    finance: [
-      { id: "student_account", label: "Student Account (Invoice)" },
-      { id: "make_payment", label: "Make Payment (Paystack / EFT)" },
-      { id: "payment_history", label: "Payment History & Receipts" },
-      { id: "fee_structure", label: "Fee Structure & Quotation" },
-    ],
-    modules: [
-      { id: "registered_modules", label: "Registered Modules" },
-      { id: "moodle_classroom", label: "Open Classroom in Moodle" },
-      { id: "study_materials", label: "Study Materials & Past Papers" },
-      { id: "progress_report", label: "Academic Progress Report" },
-    ],
-    "student-life": [
-      { id: "digital_card", label: "Digital Student ID Card" },
-      { id: "code_of_conduct", label: "Student Code of Conduct" },
-      { id: "campus_services", label: "Campus Services & Support" },
-    ],
-    timetable: [
-      { id: "weekly_schedule", label: "Weekly Lecture Schedule" },
-      { id: "virtual_sessions", label: "Virtual Classroom Links" },
-      { id: "exam_dates", label: "Exam Timetable & Venues" },
-    ],
-    announcements: [
-      { id: "all_notices", label: "All Institutional Notices" },
-      { id: "academic_circulars", label: "Academic Circulars" },
-      { id: "financial_notices", label: "Financial Notices" },
-    ],
-    settings: [
-      { id: "account_profile", label: "Profile Details" },
-      { id: "security", label: "Password & Security" },
-    ],
-  };
-
   const currentTiles = isTeacher ? TEACHER_TILES : STUDENT_TILES;
   const currentMenus = isTeacher ? TEACHER_MENUS : STUDENT_MENUS;
   const activeSubMenuItems = currentMenus[activeDepartment] || [];
 
   // Centralized navigation handler syncing React state and browser history
   const navigateTo = useCallback(
-    (deptId: string, subPageId?: string, replaceHistory = false) => {
+    (deptId: string, subPageId?: string) => {
       const menus = isTeacher ? TEACHER_MENUS : STUDENT_MENUS;
       let resolvedSub = subPageId;
       if (!resolvedSub) {
@@ -702,69 +701,48 @@ export default function Dashboard() {
       if (typeof window !== "undefined") {
         let targetUrl = "/dashboard";
         if (deptId !== "dashboard") {
-          const params = new URLSearchParams();
-          params.set("dept", deptId);
-          if (resolvedSub) {
-            params.set("tab", resolvedSub);
-          }
-          targetUrl = `/dashboard?${params.toString()}`;
+          targetUrl = `/dashboard?dept=${encodeURIComponent(deptId)}&tab=${encodeURIComponent(resolvedSub)}`;
         }
-
-        const stateObj = { dept: deptId, subPage: resolvedSub };
-        const currentFull = window.location.pathname + window.location.search;
-
-        if (currentFull !== targetUrl) {
-          if (replaceHistory) {
-            window.history.replaceState(stateObj, "", targetUrl);
-          } else {
-            window.history.pushState(stateObj, "", targetUrl);
-          }
-        }
+        window.history.pushState({ dept: deptId, subPage: resolvedSub }, "", targetUrl);
       }
     },
-    [isTeacher, TEACHER_MENUS, STUDENT_MENUS]
+    [isTeacher]
   );
 
-  // Synchronize browser history and handle Chrome Back / Forward navigation
+  // Initialize history on mount and listen to Chrome Back / Forward navigation
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    // 1. Initial check: parse URL search params (?dept=...&tab=...)
+    // Check if initial URL on page load has a department query (?dept=...&tab=...)
     const params = new URLSearchParams(window.location.search);
     const urlDept = params.get("dept");
     const urlTab = params.get("tab");
 
     if (urlDept && urlDept !== "dashboard") {
       setActiveDepartment(urlDept);
-      const menus = isTeacher ? TEACHER_MENUS : STUDENT_MENUS;
-      const availableSubs = menus[urlDept] || [];
-      const defaultSub = availableSubs[0]?.id || "overview";
-      const resolvedSub = urlTab || defaultSub;
-      setActiveSubPage(resolvedSub);
+      if (urlTab) {
+        setActiveSubPage(urlTab);
+      }
       window.history.replaceState(
-        { dept: urlDept, subPage: resolvedSub },
+        { dept: urlDept, subPage: urlTab || "" },
         "",
-        `/dashboard?dept=${encodeURIComponent(urlDept)}&tab=${encodeURIComponent(resolvedSub)}`
+        window.location.href
       );
     } else {
-      setActiveDepartment("dashboard");
       window.history.replaceState({ dept: "dashboard", subPage: "" }, "", "/dashboard");
     }
 
-    // 2. Popstate listener for Chrome Back / Forward navigation
+    // Chrome Back / Forward handler
     const handlePopState = (event: PopStateEvent) => {
-      const searchParams = new URLSearchParams(window.location.search);
-      const poppedDept = searchParams.get("dept") || (event.state as any)?.dept || "dashboard";
-      const poppedTab = searchParams.get("tab") || (event.state as any)?.subPage || "";
-
-      setActiveDepartment(poppedDept);
-      if (poppedDept === "dashboard") {
-        setActiveSubPage("");
+      const state = event.state;
+      if (state && state.dept) {
+        setActiveDepartment(state.dept);
+        setActiveSubPage(state.subPage || "");
       } else {
-        const menus = isTeacher ? TEACHER_MENUS : STUDENT_MENUS;
-        const availableSubs = menus[poppedDept] || [];
-        const defaultSub = availableSubs[0]?.id || "overview";
-        setActiveSubPage(poppedTab || defaultSub);
+        // User backed up all the way to dashboard base: keep safely on Launchpad
+        setActiveDepartment("dashboard");
+        setActiveSubPage("");
+        window.history.pushState({ dept: "dashboard", subPage: "" }, "", "/dashboard");
       }
 
       setStatusMessage(null);
@@ -775,7 +753,7 @@ export default function Dashboard() {
     return () => {
       window.removeEventListener("popstate", handlePopState);
     };
-  }, [isTeacher, TEACHER_MENUS, STUDENT_MENUS]);
+  }, []);
 
   // When clicking a dashboard tile, enter that department and set its first sub-page
   const handleOpenDepartment = (deptId: string) => {
