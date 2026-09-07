@@ -495,6 +495,21 @@ export default function Dashboard() {
   const [parsedRows, setParsedRows] = useState<ParsedStudentRow[]>([]);
   const [importingBulk, setImportingBulk] = useState(false);
 
+  // Student enrollments search, filter, and modals state
+  const [studentSearchQuery, setStudentSearchQuery] = useState("");
+  const [studentStatusFilter, setStudentStatusFilter] = useState<"all" | "active" | "pending">("all");
+  const [showEnrollModal, setShowEnrollModal] = useState(false);
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [selectedDetailStudent, setSelectedDetailStudent] = useState<StudentInvite | null>(null);
+
+  // Single student enrollment form state
+  const [enrollFirstName, setEnrollFirstName] = useState("");
+  const [enrollSurname, setEnrollSurname] = useState("");
+  const [enrollEmail, setEnrollEmail] = useState("");
+  const [enrollPhone, setEnrollPhone] = useState("");
+  const [enrollStudentNumber, setEnrollStudentNumber] = useState("");
+  const [enrollError, setEnrollError] = useState("");
+
   // Bulletproof print using hidden iframe to bypass popup blockers
   const printDocument = (htmlToPrint: string) => {
     if (!htmlToPrint) return;
